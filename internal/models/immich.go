@@ -78,7 +78,19 @@ func (im *ImmichModel) FetchAlbumsDetails(albumId, apiKey string) (Album, error)
 	return album, nil
 }
 
-func (im *ImmichModel) InsertAlbum(album Album) {
+func (im *ImmichModel) InsertOrAlbum(album Album) {
+
+	filter := bson.D{
+		{
+			"id", album.Id,
+		},
+	}
+	res := im.DbClient.Database("Notify").Collection("albums").FindOneAndReplace(context.TODO(), filter, album, nil)
+
+	if res.Err() == nil {
+		return
+	}
+
 	_, err := im.DbClient.Database("Notify").Collection("albums").InsertOne(context.TODO(), album, nil)
 	if err != nil {
 		fmt.Printf("Error saving album: %s", err)

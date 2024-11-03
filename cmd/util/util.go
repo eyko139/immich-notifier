@@ -20,7 +20,7 @@ func New(templateCache map[string]*template.Template) *Helper {
 
 func (h *Helper) Render(w http.ResponseWriter, template string, data *interface{}) {
 	if ts, ok := h.TemplateCache[template]; !ok {
-		panic("Could fetch template from cache")
+		panic("Could not fetch template from cache")
 	} else {
 
 		// writing template to a buffer first catches runtime errors

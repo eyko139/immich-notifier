@@ -21,11 +21,21 @@ func (a *App) apiKeyPost() http.HandlerFunc {
 		apiKey := r.Form.Get("apiKey")
 
 		albums, _ := a.Immich.FetchAlbums(apiKey)
+		user, err := a.Users.FindUser(apiKey)
+		if err != nil {
+			a.ErrorLog.Println("no user found")
+		}
+		for _, sub := range user.Subscriptions {
+			for idx, album := range albums {
+				if sub.Id == album.Id {
+					albums[idx].IsSubscribed = true
+				}
+			}
+		}
 		for _, album := range albums {
-			a.Immich.InsertAlbum(album)
+			a.Immich.InsertOrAlbum(album)
 		}
 		templateData := a.Helper.NewTemplateData(albums, apiKey)
-
 		a.Helper.ReturnHtml(w, "albums.html", templateData)
 	}
 }

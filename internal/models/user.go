@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"time"
@@ -42,4 +43,22 @@ func (um *UserModel) SaveSubscription(user User) (string, error) {
 		return "", err
 	}
 	return "ok", nil
+}
+
+func (um *UserModel) FindUser(apiKey string) (User, error) {
+	filter := bson.D{
+		{
+			"apiKey", apiKey,
+		},
+	}
+	res := um.DbClient.Database("Notify").Collection("users").FindOne(context.TODO(), filter)
+	if res.Err() != nil {
+		fmt.Println("No user found for apikey")
+	}
+	var user User
+	err := res.Decode(&user)
+	if err != nil {
+		fmt.Println("failed to decode user")
+	}
+	return user, nil
 }
