@@ -1,0 +1,10 @@
+{{ define "main" }}
+
+<form hx-post="/apikey" hx-ext="morph">
+    <h2>Input your api key</h2>
+    <label for="apiKey">ApiKey </label>
+    <input id="apiKey" name="apiKey" type="text">
+    <button type="submit" hx-swap="morph">Submit</button>
+</form>
+{{ end }}
+
