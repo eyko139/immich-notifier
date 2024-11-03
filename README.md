@@ -1,1 +1,2 @@
 # immich-notifier
+README
