@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"github.com/eyko139/immich-notifier/internal/models"
+	"net/http"
+	"time"
+)
 
 func (a *App) home() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -15,9 +19,11 @@ func (a *App) apiKeyPost() http.HandlerFunc {
 			a.ErrorLog.Printf("Error parsing form, err: %s", err)
 		}
 		apiKey := r.Form.Get("apiKey")
-		a.InfoLog.Println(apiKey)
 
 		albums, _ := a.Immich.FetchAlbums(apiKey)
+		for _, album := range albums {
+			a.Immich.InsertAlbum(album)
+		}
 		templateData := a.Helper.NewTemplateData(albums, apiKey)
 
 		a.Helper.ReturnHtml(w, "albums.html", templateData)
@@ -26,28 +32,32 @@ func (a *App) apiKeyPost() http.HandlerFunc {
 
 func (a *App) notifyPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		type FormInput struct {
-			album []string
-			email string
-			apiKey string
-		}
-		formValues := &FormInput{
-			album: []string{},
-		}
 		err := r.ParseForm()
+		var user models.User
+		user.Email = r.Form["email"][0]
+		user.ApiKey = r.Form["apiKey"][0]
+		user.Subscriptions = []models.AlbumSubscription{}
+
 		if err != nil {
 			a.ErrorLog.Println("Failed to parse form")
 		}
 		for key, value := range r.Form {
 			if key == "album" {
 				for _, val := range value {
-					formValues.album = append(formValues.album, val)
+					var subscription models.AlbumSubscription
+					album, err := a.Immich.FetchAlbumsDetails(val, user.ApiKey)
+					if err != nil {
+						a.ErrorLog.Printf("Error fetching api details: %s", err)
+					}
+					subscription.Id = album.Id
+					subscription.AlbumName = album.AlbumName
+					subscription.LastNotified = time.Now()
+					subscription.IsSubscribed = true
+					user.Subscriptions = append(user.Subscriptions, subscription)
 				}
 			}
-			formValues.email = r.Form["email"][0]
-			formValues.apiKey = r.Form["apiKey"][0]
 		}
-		res, _ := a.Users.SaveSubscription("test", formValues.album, formValues.apiKey)
+		res, _ := a.Users.SaveSubscription(user)
 		a.InfoLog.Println(res)
 	}
 }

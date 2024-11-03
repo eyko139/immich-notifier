@@ -12,7 +12,7 @@ func main() {
 
 	app := NewApp(env)
 
-	app.Notifier.StartLoop()
+	go app.Notifier.StartLoop()
 
 	srv := http.Server{
 		ErrorLog:     app.ErrorLog,

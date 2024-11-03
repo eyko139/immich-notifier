@@ -14,11 +14,12 @@
         {{ end }}
     </ul>
 
-    <h3>Notify Email</h3>
-    <label for="email">
+    <h3>Notify Me</h3>
+    <label for="email">Email</label>
     <input type="text" id="email" name="email">
-    </label>
-    <input type="text" style="visibility: hidden" value="{{ .ApiKey }}" name="apiKey">
+    <label for="name">UserName</label>
+    <input id="name" name="name" type="text">
+    <input id="apiKey" name="apiKey" value="{{ .ApiKey }}" style="visibility: hidden" type="text">
     <button type="submit">Notify me!</button>
 </form>
 {{ end}}
