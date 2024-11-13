@@ -54,6 +54,6 @@ func NewApp(env *env.Env) *App {
 		Helper:   helper,
 		Users:    models.NewUserModel(client),
 		Immich:   models.NewImmichModel(client, env),
-		Notifier: notifier.New(client, env, NotificationInterval, models.NewImmichModel(client, env)),
+		Notifier: notifier.New(client, env, NotificationInterval, models.NewImmichModel(client, env), errLog, infoLog),
 	}
 }

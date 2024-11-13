@@ -9,6 +9,7 @@ import (
 	"github.com/eyko139/immich-notifier/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"log"
 	"net/http"
 	"time"
 )
@@ -18,6 +19,8 @@ type Notifier struct {
 	client   *mongo.Client
 	env      *env.Env
 	immich   *models.ImmichModel
+	errLog   *log.Logger
+	infoLog  *log.Logger
 }
 
 type Notification struct {
@@ -26,12 +29,14 @@ type Notification struct {
 	Priority int    `json:"priority"`
 }
 
-func New(client *mongo.Client, env *env.Env, interval time.Duration, immich *models.ImmichModel) *Notifier {
+func New(client *mongo.Client, env *env.Env, interval time.Duration, immich *models.ImmichModel, errLog *log.Logger, infoLog *log.Logger) *Notifier {
 	return &Notifier{
 		interval: interval,
 		client:   client,
 		env:      env,
 		immich:   immich,
+		errLog:   errLog,
+		infoLog:  infoLog,
 	}
 }
 
@@ -63,27 +68,56 @@ func (n *Notifier) StartLoop() {
 				if album.UpdatedAt.After(subscription.LastNotified) {
 					user.Subscriptions[idx].LastNotified = time.Now()
 					n.immich.UpdateSubscription(user)
-					n.Notify(user, subscription)
+					n.Notify(user, subscription, album.Assets[0].ID)
 				}
 			}
 		}
 	}
 }
 
-func (n *Notifier) Notify(user models.User, sub models.AlbumSubscription) {
+func (n *Notifier) Notify(user models.User, sub models.AlbumSubscription, latestAssetId string) {
+	thumbBytes := n.immich.FetchThumbnail(latestAssetId, user.ApiKey)
+	n.Gotify(user, sub)
+	n.Telegram(user, thumbBytes, sub.AlbumName)
+}
 
+func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, albumName string) {
+
+	messageRequest := buildMessageRequest(user.ChatId, fmt.Sprintf("There was an update in Album: %s", albumName))
+	thumbNailRequest := buildThumbnailRequest(latestAssetBytes, user.ChatId)
+
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	messageResponse, err := client.Do(messageRequest)
+
+	if err != nil {
+		n.errLog.Println("Error sending telegram message" + err.Error())
+	}
+	n.infoLog.Printf("Sent update message %+v", messageResponse)
+
+	thumbResponse, err := client.Do(thumbNailRequest)
+
+	if err != nil {
+		n.errLog.Println("Error sending thumbnail" + err.Error())
+	}
+
+	n.infoLog.Printf("Sent update thumbnail %+v", thumbResponse)
+}
+
+func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) {
 	notification := Notification{
-		Message:  fmt.Sprintf("Album %s has been updated, user: ", sub.AlbumName, user.Email),
+		Message:  fmt.Sprintf("Album %s has been updated, user: %s", sub.AlbumName, user.Email),
 		Title:    "Immich album update",
 		Priority: 1,
 	}
 
-	notiBytes, _ := json.Marshal(notification)
+	notificationBytes, _ := json.Marshal(notification)
 
-	fmt.Println("Notifying")
-	req, _ := http.NewRequest(http.MethodPost, "https://gotify.itsmelon.com/message", bytes.NewBuffer(notiBytes))
-	req.Header.Set("X-Gotify-Key", n.env.GotifyKey)
-	req.Header.Set("Content-Type", "application/json")
+	req, _ := http.NewRequest(http.MethodPost, n.env.GotifyUrl, bytes.NewBuffer(notificationBytes))
+	req.Header.Set(GotifyAuthHeader, n.env.GotifyKey)
+	req.Header.Set(ContentType, JsonContentType)
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -91,5 +125,5 @@ func (n *Notifier) Notify(user models.User, sub models.AlbumSubscription) {
 	if err != nil {
 		fmt.Printf("failed to notify: %s", err)
 	}
-	fmt.Println(res)
+	n.infoLog.Printf("Sent gotify notification, res: %v", res)
 }

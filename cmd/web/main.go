@@ -16,7 +16,7 @@ func main() {
 
 	srv := http.Server{
 		ErrorLog:     app.ErrorLog,
-		Addr:         ":19331",
+		Addr:         ":29442",
 		Handler:      app.Routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,

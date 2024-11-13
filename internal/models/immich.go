@@ -24,6 +24,9 @@ type Album struct {
 	UpdatedAt    time.Time `json:"updatedAt" bson:"updatedAt"`
 	LastNotified time.Time `json:"lastNotified" bson:"lastNotified"`
 	IsSubscribed bool      `json:"isSubscribed" bson:"isSubscribed"`
+	Assets       []struct {
+		ID string `json:"id"`
+	}
 }
 
 type ImmichModel struct {
@@ -105,4 +108,21 @@ func (im *ImmichModel) UpdateSubscription(user User) {
 	if err != nil {
 		fmt.Printf("Failed to update: %s", err)
 	}
+}
+
+func (im *ImmichModel) FetchThumbnail(uuid string, apiKey string) []byte {
+
+	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/assets/"+uuid+"/thumbnail", nil)
+	if err != nil {
+		fmt.Println("Error creating request")
+	}
+	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add("Accept", "application/octet-stream")
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
+	res, err := client.Do(req)
+
+	bytes, _ := io.ReadAll(res.Body)
+	return bytes
 }

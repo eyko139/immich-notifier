@@ -14,6 +14,7 @@ type User struct {
 	Email         string              `json:"email" bson:"email"`
 	ID            bson.ObjectID       `json:"id" bson:"_id"`
 	ApiKey        string              `json:"apiKey" bson:"apiKey"`
+	ChatId        int                 `json:"chat_id" bson:"chatId"`
 }
 
 type AlbumSubscription struct {
@@ -61,4 +62,24 @@ func (um *UserModel) FindUser(apiKey string) (User, error) {
 		fmt.Println("failed to decode user")
 	}
 	return user, nil
+}
+
+func (um *UserModel) ActivateSubscriptions(apiKey string, chatId int) error {
+	filter := bson.M{
+		"apiKey": apiKey,
+	}
+
+	update := bson.M{"$set": bson.M{"Subscriptions.$[].isSubscribed": true, "chatId": chatId}}
+
+	res := um.DbClient.Database("Notify").Collection("users").FindOneAndUpdate(context.TODO(), filter, update)
+	if res.Err() != nil {
+		fmt.Println("No user found for apikey")
+	}
+	var user User
+	err := res.Decode(&user)
+	if err != nil {
+		fmt.Println("failed to decode user")
+		return nil
+	}
+	return nil
 }

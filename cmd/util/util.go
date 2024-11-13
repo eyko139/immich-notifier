@@ -44,6 +44,16 @@ func (h *Helper) ReturnHtml(w http.ResponseWriter, templateName string, data any
 		fmt.Println(err)
 	}
 }
+func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, data any) {
+	ts, err := template.ParseFiles(fmt.Sprintf("../../ui/html/singles/%s", templateName))
+	if err != nil {
+		panic("Error parsing partial")
+	}
+	ts.Execute(w, data)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
 
 func (h *Helper) NewTemplateData(albums []models.Album, apiKey string) *models.TemplateData {
 	return &models.TemplateData{

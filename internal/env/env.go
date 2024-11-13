@@ -6,7 +6,8 @@ type Env struct {
 	ImmichUrl          string
 	ApiKey             string
 	DbConnectionString string
-	GotifyKey string
+	GotifyKey          string
+	GotifyUrl          string
 }
 
 func New() *Env {
@@ -17,6 +18,8 @@ func New() *Env {
 	viper.BindEnv("DB_CONNECTION_STRING")
 	viper.SetDefault("DB_CONNECTION_STRING", "mongodb://root:password@localhost:27017")
 	viper.BindEnv("GOTIFY_KEY")
+	viper.BindEnv("GOTIFY_URL")
+	viper.SetDefault("GOTIFY_URL", "https://gotify.itsmelon.com/message")
 
 	viper.BindEnv("API_KEY")
 
@@ -24,5 +27,6 @@ func New() *Env {
 	env.ApiKey = viper.GetString("API_KEY")
 	env.DbConnectionString = viper.GetString("DB_CONNECTION_STRING")
 	env.GotifyKey = viper.GetString("GOTIFY_KEY")
+	env.GotifyUrl = viper.GetString("GOTIFY_URL")
 	return env
 }

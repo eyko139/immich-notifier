@@ -1,6 +1,6 @@
 {{define "base"}}
-<h2>Select album(s)</h2>
-<form hx-post="notifypost">
+<h2 id="select-header">Select album(s)</h2>
+<form hx-post="notifypost" hx-target="#select-header">
     <ul>
         {{ range .Albums }}
         <li>
@@ -13,13 +13,7 @@
         </li>
         {{ end }}
     </ul>
-
-    <h3>Notify Me</h3>
-    <label for="email">Email</label>
-    <input type="text" id="email" name="email">
-    <label for="name">UserName</label>
-    <input id="name" name="name" type="text">
     <input id="apiKey" name="apiKey" value="{{ .ApiKey }}" style="visibility: hidden" type="text">
-    <button type="submit">Notify me!</button>
+    <button type="submit">Save subscription me!</button>
 </form>
 {{ end}}

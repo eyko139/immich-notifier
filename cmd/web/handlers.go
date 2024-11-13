@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/eyko139/immich-notifier/internal/models"
+	"io"
 	"net/http"
 	"time"
 )
@@ -44,7 +46,6 @@ func (a *App) notifyPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		var user models.User
-		user.Email = r.Form["email"][0]
 		user.ApiKey = r.Form["apiKey"][0]
 		user.Subscriptions = []models.AlbumSubscription{}
 
@@ -62,12 +63,30 @@ func (a *App) notifyPost() http.HandlerFunc {
 					subscription.Id = album.Id
 					subscription.AlbumName = album.AlbumName
 					subscription.LastNotified = time.Now()
-					subscription.IsSubscribed = true
+					subscription.IsSubscribed = false
 					user.Subscriptions = append(user.Subscriptions, subscription)
 				}
 			}
 		}
 		res, _ := a.Users.SaveSubscription(user)
 		a.InfoLog.Println(res)
+
+		a.Helper.ReturnPlainHtml(w, "notify.html", struct{ ApiKey string }{ApiKey: user.ApiKey})
+	}
+}
+
+func (a *App) botHook() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var botResponse models.BotResponse
+		bytes, _ := io.ReadAll(r.Body)
+		err := json.Unmarshal(bytes, &botResponse)
+		if err != nil {
+			a.ErrorLog.Printf("Error parsing bot response: %s", err)
+		}
+		apiKey := botResponse.Message.Text[7:]
+		err = a.Users.ActivateSubscriptions(apiKey, botResponse.Message.From.Id)
+		if err != nil {
+			a.ErrorLog.Println(err)
+		}
 	}
 }
