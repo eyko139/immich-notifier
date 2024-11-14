@@ -18,7 +18,7 @@ func New(templateCache map[string]*template.Template) *Helper {
 	}
 }
 
-func (h *Helper) Render(w http.ResponseWriter, template string, data *interface{}) {
+func (h *Helper) Render(w http.ResponseWriter, template string, data any) {
 	if ts, ok := h.TemplateCache[template]; !ok {
 		panic("Could not fetch template from cache")
 	} else {

@@ -78,24 +78,16 @@ func (n *Notifier) StartLoop() {
 func (n *Notifier) Notify(user models.User, sub models.AlbumSubscription, latestAssetId string) {
 	thumbBytes := n.immich.FetchThumbnail(latestAssetId, user.ApiKey)
 	n.Gotify(user, sub)
-	n.Telegram(user, thumbBytes, sub.AlbumName)
+	n.Telegram(user, thumbBytes, sub)
 }
 
-func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, albumName string) {
+func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) {
 
-	messageRequest := buildMessageRequest(user.ChatId, fmt.Sprintf("There was an update in Album: %s", albumName))
-	thumbNailRequest := buildThumbnailRequest(latestAssetBytes, user.ChatId)
+	thumbNailRequest := buildThumbnailRequest(latestAssetBytes, user.ChatId, album)
 
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
-
-	messageResponse, err := client.Do(messageRequest)
-
-	if err != nil {
-		n.errLog.Println("Error sending telegram message" + err.Error())
-	}
-	n.infoLog.Printf("Sent update message %+v", messageResponse)
 
 	thumbResponse, err := client.Do(thumbNailRequest)
 

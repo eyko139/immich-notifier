@@ -1,6 +1,7 @@
 {{ define "main" }}
 
 <form hx-post="/apikey" hx-ext="morph" hx-target="#albums" hx-swap="outerHTMl">
+    <h1>Hello {{ .Email }}</h1>
     <h2>Input your api key</h2>
     <label for="apiKey">ApiKey </label>
     <input id="apiKey" name="apiKey" type="text">

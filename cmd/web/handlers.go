@@ -1,16 +1,25 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
+	"github.com/coreos/go-oidc"
 	"github.com/eyko139/immich-notifier/internal/models"
+	"golang.org/x/oauth2"
 	"io"
 	"net/http"
 	"time"
 )
 
+var stateStore = make(map[string]bool)
+
 func (a *App) home() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		a.Helper.Render(w, "home.html", nil)
+		mail := a.SessionManager.GetString(r.Context(), "user_email")
+		userContext := models.UserContext{Email: mail}
+		a.Helper.Render(w, "home.html", &userContext)
 	}
 }
 
@@ -89,4 +98,72 @@ func (a *App) botHook() http.HandlerFunc {
 			a.ErrorLog.Println(err)
 		}
 	}
+}
+
+func (a *App) login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		state, _ := generateState()
+		stateStore[state] = true
+		url := a.OauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		http.Redirect(w, r, url, http.StatusFound)
+	}
+}
+
+func (a *App) handleCallback() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+
+		// Verify state parameter
+		state := r.URL.Query().Get("state")
+		if !stateStore[state] {
+			http.Error(w, "Invalid state parameter", http.StatusBadRequest)
+			return
+		}
+		delete(stateStore, state)
+
+		// Exchange the authorization code for a token
+		token, err := a.OauthConfig.Exchange(ctx, r.URL.Query().Get("code"))
+		if err != nil {
+			http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Extract ID Token from OAuth2 token
+		rawIDToken, ok := token.Extra("id_token").(string)
+		if !ok {
+			http.Error(w, "No id_token in token response", http.StatusInternalServerError)
+			return
+		}
+
+		// Parse and verify ID Token
+		verifier := a.OauthProvider.Verifier(&oidc.Config{ClientID: a.Env.OidcClientId})
+		idToken, err := verifier.Verify(ctx, rawIDToken)
+		if err != nil {
+			http.Error(w, "Failed to verify ID Token: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Get user information from ID token
+		var claims struct {
+			Email string `json:"email"`
+			Name  string `json:"name"`
+		}
+		if err := idToken.Claims(&claims); err != nil {
+			http.Error(w, "Failed to parse ID Token claims: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		sessionManager.Put(r.Context(), "authenticated", true)
+		sessionManager.Put(r.Context(), "user_email", claims.Email)
+		sessionManager.Put(r.Context(), "user_name", claims.Name)
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+func generateState() (string, error) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }

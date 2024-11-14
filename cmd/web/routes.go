@@ -18,7 +18,9 @@ func (a *App) Routes() http.Handler {
 	router.Handler(http.MethodPost, "/bothook", dynamic.ThenFunc(a.botHook()))
 	router.Handler(http.MethodPost, "/apikey", dynamic.ThenFunc(a.apiKeyPost()))
 	router.Handler(http.MethodPost, "/notifypost", dynamic.ThenFunc(a.notifyPost()))
-	standard := alice.New(a.LogRequests, secureHeaders)
+	router.Handler(http.MethodGet, "/login", dynamic.ThenFunc(a.login()))
+	router.Handler(http.MethodGet, "/callback", dynamic.ThenFunc(a.handleCallback()))
+	standard := alice.New(a.SessionManager.LoadAndSave, a.LogRequests, secureHeaders)
 	return standard.Then(router)
 
 }

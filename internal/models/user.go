@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"time"
 )
 
@@ -15,6 +16,10 @@ type User struct {
 	ID            bson.ObjectID       `json:"id" bson:"_id"`
 	ApiKey        string              `json:"apiKey" bson:"apiKey"`
 	ChatId        int                 `json:"chat_id" bson:"chatId"`
+}
+
+type UserContext struct {
+	Email string
 }
 
 type AlbumSubscription struct {
@@ -34,12 +39,17 @@ func NewUserModel(client *mongo.Client) *UserModel {
 	}
 }
 
-func (um *UserModel) Insert(name string, subscribedAlbums []string, apiKey string) (string, error) {
-	return "", nil
-}
-
 func (um *UserModel) SaveSubscription(user User) (string, error) {
-	_, err := um.DbClient.Database("Notify").Collection("users").InsertOne(context.TODO(), user, nil)
+	filter := bson.D{
+		{
+			"apiKey", user.ApiKey,
+		},
+	}
+	update := bson.M{"$set": user}
+
+	opts := options.Update().SetUpsert(true)
+
+	_, err := um.DbClient.Database("Notify").Collection("users").UpdateOne(context.TODO(), filter, update, opts)
 	if err != nil {
 		return "", err
 	}

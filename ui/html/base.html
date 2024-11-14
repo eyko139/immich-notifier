@@ -15,17 +15,18 @@
 family=Ubuntu+Mono:400,700"
     />
     <script src="/static/js/all.min.js"></script>
+
+    <script
+            src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.js"
+            integrity="sha384-BBDmZzVt6vjz5YbQqZPtFZW82o8QotoM7RUp5xOxV3nSJ8u2pSdtzFAbGKzTlKtg"
+            crossorigin="anonymous"
+    ></script>
 </head>
 <body id="body">
 <header>
     <h1>Get Notified!</h1>
 </header>
 {{ template "main" .}}
-<script
-        src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.js"
-        integrity="sha384-BBDmZzVt6vjz5YbQqZPtFZW82o8QotoM7RUp5xOxV3nSJ8u2pSdtzFAbGKzTlKtg"
-        crossorigin="anonymous"
-></script>
 </body>
 </html>
 {{end}}

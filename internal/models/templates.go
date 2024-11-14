@@ -8,6 +8,7 @@ import (
 type TemplateData struct {
 	Albums []Album
 	ApiKey string
+	User   UserContext
 }
 
 func NewTemplateCache() (map[string]*template.Template, error) {

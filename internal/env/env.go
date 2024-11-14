@@ -8,6 +8,10 @@ type Env struct {
 	DbConnectionString string
 	GotifyKey          string
 	GotifyUrl          string
+	OidcClientId       string
+	OidcClientSecret   string
+	OidcIssuerUrl      string
+	OidcRedirectUrl    string
 }
 
 func New() *Env {
@@ -21,6 +25,11 @@ func New() *Env {
 	viper.BindEnv("GOTIFY_URL")
 	viper.SetDefault("GOTIFY_URL", "https://gotify.itsmelon.com/message")
 
+	viper.BindEnv("OIDC_CLIENT_ID")
+	viper.BindEnv("OIDC_CLIENT_SECRET")
+	viper.BindEnv("OIDC_ISSUER_URL")
+	viper.BindEnv("OIDC_REDIRECT_URL")
+
 	viper.BindEnv("API_KEY")
 
 	env.ImmichUrl = viper.GetString("IMMICH_URl")
@@ -28,5 +37,9 @@ func New() *Env {
 	env.DbConnectionString = viper.GetString("DB_CONNECTION_STRING")
 	env.GotifyKey = viper.GetString("GOTIFY_KEY")
 	env.GotifyUrl = viper.GetString("GOTIFY_URL")
+	env.OidcClientId = viper.GetString("OIDC_CLIENT_ID")
+	env.OidcClientSecret = viper.GetString("OIDC_CLIENT_SECRET")
+	env.OidcIssuerUrl = viper.GetString("OIDC_ISSUER_URL")
+	env.OidcRedirectUrl = viper.GetString("OIDC_REDIRECT_URL")
 	return env
 }
