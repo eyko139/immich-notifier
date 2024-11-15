@@ -1,18 +1,24 @@
 {{define "base"}}
 <h2 id="select-header">Select album(s)</h2>
 <form hx-post="notifypost" hx-target="#select-header">
-    <ul>
+    <div class="album-list">
         {{ range .Albums }}
-        <li>
-            <div class="album-title">
-                {{ .AlbumName }}
+        <div class="thumbnail-container">
+            <div class="thumbnail-header">
+                <div class="thumbnail-title">
+                    {{ .AlbumName }}
+                </div>
+            </div>
+            <div class="album-container">
+                <img src="data:image/jpg;base64, {{ .B64Thumbnail }}"/>
             </div>
             <label for="{{ .Id }}">
-                <input id="{{ .Id }}" type="checkbox" name="album" value="{{ .Id }}" {{ if .IsSubscribed }}checked{{end}}>
+                <input id="{{ .Id }}" type="checkbox" name="album" value="{{ .Id }}" {{ if .IsSubscribed
+                       }}checked{{end}}>
             </label>
-        </li>
+        </div>
         {{ end }}
-    </ul>
+    </div>
     <input id="apiKey" name="apiKey" value="{{ .ApiKey }}" style="visibility: hidden" type="text">
     <button type="submit">Save subscription me!</button>
 </form>

@@ -2,9 +2,11 @@ package models
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/eyko139/immich-notifier/internal/env"
+	"github.com/eyko139/immich-notifier/internal/util"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"io"
@@ -17,14 +19,17 @@ type Immich struct {
 }
 
 type Album struct {
-	AlbumName    string    `json:"albumName" bson:"albumName"`
-	Description  string    `json:"description" bson:"description"`
-	Id           string    `json:"id" bson:"id"`
-	AlbumUsers   string    `json:"albumUsers" bson:"albumUsers"`
-	UpdatedAt    time.Time `json:"updatedAt" bson:"updatedAt"`
-	LastNotified time.Time `json:"lastNotified" bson:"lastNotified"`
-	IsSubscribed bool      `json:"isSubscribed" bson:"isSubscribed"`
-	Assets       []struct {
+	AlbumName             string    `json:"albumName" bson:"albumName"`
+	Description           string    `json:"description" bson:"description"`
+	Id                    string    `json:"id" bson:"id"`
+	AlbumUsers            string    `json:"albumUsers" bson:"albumUsers"`
+	UpdatedAt             time.Time `json:"updatedAt" bson:"updatedAt"`
+	LastNotified          time.Time `json:"lastNotified" bson:"lastNotified"`
+	IsSubscribed          bool      `json:"isSubscribed" bson:"isSubscribed"`
+	AlbumThumbnailAssetId string    `json:"albumThumbnailAssetId" bson:"albumThumbnailAssetId"`
+	B64Thumbnail          string    `json:"b64Thumbnail" bson:"b64Thumbnail"`
+	AssetCount            int       `json:"assetCount" bson:"assetCount"`
+	Assets                []struct {
 		ID string `json:"id"`
 	}
 }
@@ -58,6 +63,15 @@ func (im *ImmichModel) FetchAlbums(apiKey string) ([]Album, error) {
 	resBytes, _ := io.ReadAll(res.Body)
 	err = json.Unmarshal(resBytes, &albums)
 	defer res.Body.Close()
+
+	filteredAlbums := util.Filter(albums, IsNotEmpty)
+
+	for idx, album := range filteredAlbums {
+		thumbNail := im.FetchThumbnail(album.AlbumThumbnailAssetId, apiKey)
+		base64String := base64.StdEncoding.EncodeToString(thumbNail)
+		albums[idx].B64Thumbnail = base64String
+	}
+
 	return albums, nil
 }
 
@@ -125,4 +139,8 @@ func (im *ImmichModel) FetchThumbnail(uuid string, apiKey string) []byte {
 
 	bytes, _ := io.ReadAll(res.Body)
 	return bytes
+}
+
+func IsNotEmpty(album Album) bool {
+	return album.AssetCount != 0
 }
