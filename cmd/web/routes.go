@@ -4,13 +4,21 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 func (a *App) Routes() http.Handler {
 
 	router := httprouter.New()
 
-	fileServer := http.FileServer(http.Dir("../../ui/static/"))
+	cwd, err := os.Getwd() // Get the current working directory
+	if err != nil {
+		panic(err)
+	}
+	staticPath := filepath.Join(cwd, "ui/static")
+
+	fileServer := http.FileServer(http.Dir(staticPath))
 
 	dynamic := alice.New(a.SessionManager.LoadAndSave)
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
@@ -20,7 +28,6 @@ func (a *App) Routes() http.Handler {
 
 	protected := dynamic.Append(a.requireAuthentication)
 	router.Handler(http.MethodGet, "/", protected.ThenFunc(a.home()))
-	router.Handler(http.MethodPost, "/apikey", protected.ThenFunc(a.apiKeyPost()))
 	router.Handler(http.MethodPost, "/notifypost", protected.ThenFunc(a.notifyPost()))
 	standard := alice.New(a.LogRequests, secureHeaders)
 	return standard.Then(router)

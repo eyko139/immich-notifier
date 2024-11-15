@@ -2,31 +2,37 @@ package models
 
 import (
 	"html/template"
+	"os"
 	"path/filepath"
 )
 
 type TemplateData struct {
 	Albums []Album
-	ApiKey string
 	User   UserContext
+
 }
 
 func NewTemplateCache() (map[string]*template.Template, error) {
+    cwd, err := os.Getwd() // Get the current working directory
+    if err != nil {
+        panic(err)
+    }
+    htmlPath := filepath.Join(cwd, "ui/html/")
 	cache := map[string]*template.Template{}
-	pages, err := filepath.Glob("../../ui/html/pages/*.html")
+	pages, err := filepath.Glob(htmlPath + "/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
 	for _, page := range pages {
 		name := filepath.Base(page)
 
-		ts, err := template.New(name).ParseFiles("../../ui/html/base.html")
+		ts, err := template.New(name).ParseFiles(htmlPath + "/base.html")
 
 		if err != nil {
 			return nil, err
 		}
 
-		ts, err = ts.ParseGlob("../../ui/html/partials/*.html")
+		ts, err = ts.ParseGlob(htmlPath + "/partials/*.html")
 		if err != nil {
 			return nil, err
 		}

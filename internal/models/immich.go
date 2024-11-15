@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+const (
+	ImmichApiHeader = "x-api-key"
+)
+
 type Immich struct {
 	url string
 }
@@ -46,13 +50,13 @@ func NewImmichModel(client *mongo.Client, env *env.Env) *ImmichModel {
 	}
 }
 
-func (im *ImmichModel) FetchAlbums(apiKey string) ([]Album, error) {
+func (im *ImmichModel) FetchAlbums() ([]Album, error) {
 	var albums []Album
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/albums", nil)
 	if err != nil {
-		fmt.Println("Error creating request")
+		return nil, err
 	}
-	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add(ImmichApiHeader, im.env.ImmichApiKey)
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -67,21 +71,21 @@ func (im *ImmichModel) FetchAlbums(apiKey string) ([]Album, error) {
 	filteredAlbums := util.Filter(albums, IsNotEmpty)
 
 	for idx, album := range filteredAlbums {
-		thumbNail := im.FetchThumbnail(album.AlbumThumbnailAssetId, apiKey)
+		thumbNail := im.FetchThumbnail(album.AlbumThumbnailAssetId)
 		base64String := base64.StdEncoding.EncodeToString(thumbNail)
-		albums[idx].B64Thumbnail = base64String
+		filteredAlbums[idx].B64Thumbnail = base64String
 	}
 
-	return albums, nil
+	return filteredAlbums, nil
 }
 
-func (im *ImmichModel) FetchAlbumsDetails(albumId, apiKey string) (Album, error) {
+func (im *ImmichModel) FetchAlbumsDetails(albumId string) (Album, error) {
 	var album Album
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/albums/"+albumId, nil)
 	if err != nil {
 		fmt.Println("Error creating request")
 	}
-	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add(ImmichApiHeader, im.env.ImmichApiKey)
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -124,13 +128,13 @@ func (im *ImmichModel) UpdateSubscription(user User) {
 	}
 }
 
-func (im *ImmichModel) FetchThumbnail(uuid string, apiKey string) []byte {
+func (im *ImmichModel) FetchThumbnail(uuid string) []byte {
 
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/assets/"+uuid+"/thumbnail", nil)
 	if err != nil {
 		fmt.Println("Error creating request")
 	}
-	req.Header.Add("x-api-key", apiKey)
+	req.Header.Add(ImmichApiHeader, im.env.ImmichApiKey)
 	req.Header.Add("Accept", "application/octet-stream")
 	client := http.Client{
 		Timeout: 10 * time.Second,

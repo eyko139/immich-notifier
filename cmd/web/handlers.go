@@ -8,8 +8,9 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/eyko139/immich-notifier/internal/models"
 	"golang.org/x/oauth2"
-	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -18,21 +19,9 @@ var stateStore = make(map[string]bool)
 func (a *App) home() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mail := a.SessionManager.GetString(r.Context(), "user_email")
-		userContext := models.UserContext{Email: mail}
-		a.Helper.Render(w, "home.html", &userContext)
-	}
-}
-
-func (a *App) apiKeyPost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			a.ErrorLog.Printf("Error parsing form, err: %s", err)
-		}
-		apiKey := r.Form.Get("apiKey")
-
-		albums, _ := a.Immich.FetchAlbums(apiKey)
-		user, err := a.Users.FindUser(apiKey)
+		name := a.SessionManager.GetString(r.Context(), "user_name")
+		albums, _ := a.Immich.FetchAlbums()
+		user, err := a.Users.FindOrInsertUser(name, mail)
 		if err != nil {
 			a.ErrorLog.Println("no user found")
 		}
@@ -43,19 +32,16 @@ func (a *App) apiKeyPost() http.HandlerFunc {
 				}
 			}
 		}
-		for _, album := range albums {
-			a.Immich.InsertOrAlbum(album)
-		}
-		templateData := a.Helper.NewTemplateData(albums, apiKey)
-		a.Helper.ReturnHtml(w, "albums.html", templateData)
+		templateData := a.Helper.NewTemplateData(albums, mail)
+		a.Helper.Render(w, "home.html", templateData)
 	}
 }
 
 func (a *App) notifyPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
-		var user models.User
-		user.ApiKey = r.Form["apiKey"][0]
+		user := a.GetCurrentUser(r)
+
 		user.Subscriptions = []models.AlbumSubscription{}
 
 		if err != nil {
@@ -65,7 +51,7 @@ func (a *App) notifyPost() http.HandlerFunc {
 			if key == "album" {
 				for _, val := range value {
 					var subscription models.AlbumSubscription
-					album, err := a.Immich.FetchAlbumsDetails(val, user.ApiKey)
+					album, err := a.Immich.FetchAlbumsDetails(val)
 					if err != nil {
 						a.ErrorLog.Printf("Error fetching api details: %s", err)
 					}
@@ -80,22 +66,36 @@ func (a *App) notifyPost() http.HandlerFunc {
 		res, _ := a.Users.SaveSubscription(user)
 		a.InfoLog.Println(res)
 
-		a.Helper.ReturnPlainHtml(w, "notify.html", struct{ ApiKey string }{ApiKey: user.ApiKey})
+		type NotifyEmail struct {
+			UserName string
+		}
+
+		data := NotifyEmail{UserName: url.QueryEscape(user.Name)}
+
+		a.Helper.ReturnPlainHtml(w, "notify.html", data)
 	}
 }
 
 func (a *App) botHook() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var botResponse models.BotResponse
-		bytes, _ := io.ReadAll(r.Body)
-		err := json.Unmarshal(bytes, &botResponse)
-		if err != nil {
+
+		if err := json.NewDecoder(r.Body).Decode(&botResponse); err != nil {
 			a.ErrorLog.Printf("Error parsing bot response: %s", err)
 		}
-		apiKey := botResponse.Message.Text[7:]
-		err = a.Users.ActivateSubscriptions(apiKey, botResponse.Message.From.Id)
-		if err != nil {
-			a.ErrorLog.Println(err)
+
+		if strings.HasPrefix(botResponse.Message.Text, "/start") {
+			parts := strings.SplitN(botResponse.Message.Text, " ", 2)
+			if len(parts) > 1 {
+				a.InfoLog.Println("Bothook query: " + parts[1])
+				userName := parts[1]
+				err := a.Users.ActivateSubscriptions(userName, botResponse.Message.From.Id)
+				if err != nil {
+					a.ErrorLog.Println("Failed to activate subscription")
+				}
+			} else {
+				a.InfoLog.Println("Bothook called with no parameters")
+			}
 		}
 	}
 }
@@ -104,8 +104,8 @@ func (a *App) login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		state, _ := generateState()
 		stateStore[state] = true
-		url := a.OauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
-		http.Redirect(w, r, url, http.StatusFound)
+		authCodeURL := a.OauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		http.Redirect(w, r, authCodeURL, http.StatusFound)
 	}
 }
 
@@ -155,6 +155,10 @@ func (a *App) handleCallback() http.HandlerFunc {
 		sessionManager.Put(r.Context(), "authenticated", true)
 		sessionManager.Put(r.Context(), "user_email", claims.Email)
 		sessionManager.Put(r.Context(), "user_name", claims.Name)
+
+		user, _ := a.Users.FindOrInsertUser(claims.Name, claims.Email)
+
+		a.InfoLog.Printf("created user: %+v", user)
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}

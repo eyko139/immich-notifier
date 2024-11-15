@@ -63,7 +63,7 @@ func (n *Notifier) StartLoop() {
 				if err != nil {
 					fmt.Println("error fetching album")
 				}
-				album, _ := n.immich.FetchAlbumsDetails(subscription.Id, user.ApiKey)
+				album, _ := n.immich.FetchAlbumsDetails(subscription.Id)
 				fmt.Printf("checking dates: albumUpdate: %s, subscriptionLastNotified: %s", album.UpdatedAt, subscription.LastNotified)
 				if album.UpdatedAt.After(subscription.LastNotified) {
 					user.Subscriptions[idx].LastNotified = time.Now()
@@ -76,7 +76,7 @@ func (n *Notifier) StartLoop() {
 }
 
 func (n *Notifier) Notify(user models.User, sub models.AlbumSubscription, latestAssetId string) {
-	thumbBytes := n.immich.FetchThumbnail(latestAssetId, user.ApiKey)
+	thumbBytes := n.immich.FetchThumbnail(latestAssetId)
 	n.Gotify(user, sub)
 	n.Telegram(user, thumbBytes, sub)
 }

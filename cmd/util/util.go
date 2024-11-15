@@ -44,6 +44,7 @@ func (h *Helper) ReturnHtml(w http.ResponseWriter, templateName string, data any
 		fmt.Println(err)
 	}
 }
+
 func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, data any) {
 	ts, err := template.ParseFiles(fmt.Sprintf("../../ui/html/singles/%s", templateName))
 	if err != nil {
@@ -55,9 +56,9 @@ func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, dat
 	}
 }
 
-func (h *Helper) NewTemplateData(albums []models.Album, apiKey string) *models.TemplateData {
+func (h *Helper) NewTemplateData(albums []models.Album, email string) *models.TemplateData {
 	return &models.TemplateData{
 		Albums: albums,
-		ApiKey: apiKey,
+		User:   models.UserContext{Email: email},
 	}
 }

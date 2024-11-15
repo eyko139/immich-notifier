@@ -157,3 +157,12 @@ div {
         }
     }
 }
+
+.album-thumbnail {
+    height: 80%;
+}
+
+.album-container {
+    height: 80%;
+}
+

@@ -2,16 +2,16 @@ package models
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"time"
 )
 
 type User struct {
-	Name          string              `json:"Name" bson:"name"`
-	Subscriptions []AlbumSubscription `json:"Subscriptions" bson:"Subscriptions"`
+	Name          string              `json:"name" bson:"name"`
+	Subscriptions []AlbumSubscription `json:"subscriptions" bson:"subscriptions"`
 	Email         string              `json:"email" bson:"email"`
 	ID            bson.ObjectID       `json:"id" bson:"_id"`
 	ApiKey        string              `json:"apiKey" bson:"apiKey"`
@@ -42,29 +42,36 @@ func NewUserModel(client *mongo.Client) *UserModel {
 func (um *UserModel) SaveSubscription(user User) (string, error) {
 	filter := bson.D{
 		{
-			"apiKey", user.ApiKey,
+			"email", user.Email,
 		},
 	}
-	update := bson.M{"$set": user}
+	update := bson.M{"$set": bson.M{"subscriptions": user.Subscriptions}}
 
-	opts := options.Update().SetUpsert(true)
-
-	_, err := um.DbClient.Database("Notify").Collection("users").UpdateOne(context.TODO(), filter, update, opts)
+	_, err := um.DbClient.Database("Notify").Collection("users").UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return "", err
 	}
 	return "ok", nil
 }
 
-func (um *UserModel) FindUser(apiKey string) (User, error) {
+func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 	filter := bson.D{
 		{
-			"apiKey", apiKey,
+			"email", email,
 		},
 	}
 	res := um.DbClient.Database("Notify").Collection("users").FindOne(context.TODO(), filter)
-	if res.Err() != nil {
-		fmt.Println("No user found for apikey")
+
+	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+		user := bson.M{
+			"email": email,
+			"name":  name,
+		}
+		fmt.Printf("No user found for email: %s, creating...", email)
+		_, err := um.DbClient.Database("Notify").Collection("users").InsertOne(context.TODO(), user)
+		if err != nil {
+			fmt.Println("Error creating user")
+		}
 	}
 	var user User
 	err := res.Decode(&user)
@@ -74,16 +81,16 @@ func (um *UserModel) FindUser(apiKey string) (User, error) {
 	return user, nil
 }
 
-func (um *UserModel) ActivateSubscriptions(apiKey string, chatId int) error {
+func (um *UserModel) ActivateSubscriptions(userName string, chatId int) error {
 	filter := bson.M{
-		"apiKey": apiKey,
+		"name": userName,
 	}
 
-	update := bson.M{"$set": bson.M{"Subscriptions.$[].isSubscribed": true, "chatId": chatId}}
+	update := bson.M{"$set": bson.M{"subscriptions.$[].isSubscribed": true, "chatId": chatId}}
 
 	res := um.DbClient.Database("Notify").Collection("users").FindOneAndUpdate(context.TODO(), filter, update)
 	if res.Err() != nil {
-		fmt.Println("No user found for apikey")
+		fmt.Println("No user found")
 	}
 	var user User
 	err := res.Decode(&user)
