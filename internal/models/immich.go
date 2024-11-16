@@ -103,7 +103,7 @@ func (im *ImmichModel) InsertOrAlbum(album Album) {
 
 	filter := bson.D{
 		{
-			"id", album.Id,
+			Key: "id", Value: album.Id,
 		},
 	}
 	res := im.DbClient.Database("Notify").Collection("albums").FindOneAndReplace(context.TODO(), filter, album, nil)
@@ -120,7 +120,7 @@ func (im *ImmichModel) InsertOrAlbum(album Album) {
 
 func (im *ImmichModel) UpdateSubscription(user User) {
 
-	update := bson.D{{"$set", bson.D{{"Subscriptions", user.Subscriptions}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "subscriptions", Value: user.Subscriptions}}}}
 
 	_, err := im.DbClient.Database("Notify").Collection("users").UpdateByID(context.TODO(), user.ID, update)
 	if err != nil {

@@ -1,30 +1,37 @@
 {{ define "main" }}
 <h1>Hello {{ .User.Email }}</h1>
 <h2 id="select-header">Select album(s) for User: {{ .User.Name }}</h2>
-<form hx-post="notifypost" hx-target="#subscribe">
-    <div class="album-list">
-        {{ range .Albums }}
-        <div class="thumbnail-container">
-            <div class="thumbnail-header">
-                <div class="thumbnail-title">
-                    Album: {{ .AlbumName }}
-                </div>
-                <div class="thumbnail-count">
-                    Nr. Of Photos: {{ .AssetCount }}
-                </div>
-            </div>
-            <div class="album-container">
-                <img class="album-thumbnail" src="data:image/jpg;base64, {{ .B64Thumbnail }}"/>
-            </div>
-            <label for="{{ .Id }}">
-                <input id="{{ .Id }}" type="checkbox" name="album" value="{{ .Id }}" {{ if .IsSubscribed
-                       }}checked{{end}}>
-            </label>
-        </div>
-        {{ end }}
+<form hx-post="notifypost" hx-target="#submission">
+  <div class="album-list">
+    {{ range .Albums }}
+    <div class="thumbnail-container">
+      <div class="thumbnail-header">
+        <div class="thumbnail-title">Album: {{ .AlbumName }}</div>
+        <div class="thumbnail-count">Nr. Of Photos: {{ .AssetCount }}</div>
+      </div>
+      <div class="album-container">
+        <img
+          class="album-thumbnail"
+          src="data:image/jpg;base64, {{ .B64Thumbnail }}"
+        />
+      </div>
+      <label for="{{ .Id }}">
+        <input
+          id="{{ .Id }}"
+          type="checkbox"
+          name="album"
+          value="{{ .Id }}"
+          {{
+          if
+          .IsSubscribed
+          }}checked{{end}}
+        />
+      </label>
     </div>
+    {{ end }}
+  </div>
+  <div id="submission">
     <button class="subscribe-button" type="submit">Notify me!</button>
-    <div id="subscribe"></div>
+  </div>
 </form>
 {{ end }}
-
