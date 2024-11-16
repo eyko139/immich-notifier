@@ -20,6 +20,7 @@ type User struct {
 
 type UserContext struct {
 	Email string
+	Name  string
 }
 
 type AlbumSubscription struct {
@@ -42,7 +43,7 @@ func NewUserModel(client *mongo.Client) *UserModel {
 func (um *UserModel) SaveSubscription(user User) (string, error) {
 	filter := bson.D{
 		{
-			"email", user.Email,
+			Key: "email", Value: user.Email,
 		},
 	}
 	update := bson.M{"$set": bson.M{"subscriptions": user.Subscriptions}}
@@ -57,7 +58,7 @@ func (um *UserModel) SaveSubscription(user User) (string, error) {
 func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 	filter := bson.D{
 		{
-			"email", email,
+			Key: "email", Value: email,
 		},
 	}
 	res := um.DbClient.Database("Notify").Collection("users").FindOne(context.TODO(), filter)
@@ -82,6 +83,7 @@ func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 }
 
 func (um *UserModel) ActivateSubscriptions(userName string, chatId int) error {
+
 	filter := bson.M{
 		"name": userName,
 	}
@@ -89,8 +91,11 @@ func (um *UserModel) ActivateSubscriptions(userName string, chatId int) error {
 	update := bson.M{"$set": bson.M{"subscriptions.$[].isSubscribed": true, "chatId": chatId}}
 
 	res := um.DbClient.Database("Notify").Collection("users").FindOneAndUpdate(context.TODO(), filter, update)
+    if errors.Is(res.Err(), mongo.ErrNoDocuments) {
+        fmt.Println("No user found")
+    }
 	if res.Err() != nil {
-		fmt.Println("No user found")
+        fmt.Println(res.Err())
 	}
 	var user User
 	err := res.Decode(&user)

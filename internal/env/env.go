@@ -14,6 +14,7 @@ type Env struct {
 	OidcRedirectUrl    string
 	ImmichApiKey       string
 	AppPort            string
+	AppEnv             string
 }
 
 func New() *Env {
@@ -41,6 +42,9 @@ func New() *Env {
 	viper.BindEnv("APP_PORT")
 	viper.SetDefault("APP_PORT", "29442")
 
+	viper.BindEnv("APP_ENV")
+	viper.SetDefault("APP_ENV", "development")
+
 	env.ImmichUrl = viper.GetString("IMMICH_URl")
 	env.ImmichApiKey = viper.GetString("IMMICH_API_KEY")
 	env.ApiKey = viper.GetString("API_KEY")
@@ -52,5 +56,6 @@ func New() *Env {
 	env.OidcIssuerUrl = viper.GetString("OIDC_ISSUER_URL")
 	env.OidcRedirectUrl = viper.GetString("OIDC_REDIRECT_URL")
 	env.AppPort = viper.GetString("APP_PORT")
+	env.AppEnv = viper.GetString("APP_ENV")
 	return env
 }

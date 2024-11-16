@@ -32,7 +32,7 @@ func (a *App) home() http.HandlerFunc {
 				}
 			}
 		}
-		templateData := a.Helper.NewTemplateData(albums, mail)
+		templateData := a.Helper.NewTemplateData(albums, mail, name)
 		a.Helper.Render(w, "home.html", templateData)
 	}
 }
@@ -102,9 +102,15 @@ func (a *App) botHook() http.HandlerFunc {
 
 func (a *App) login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var authCodeURL string
 		state, _ := generateState()
 		stateStore[state] = true
-		authCodeURL := a.OauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		if a.Env.AppEnv == "development" {
+			authCodeURL = "/"
+		} else {
+			authCodeURL = a.OauthConfig.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		}
+
 		http.Redirect(w, r, authCodeURL, http.StatusFound)
 	}
 }

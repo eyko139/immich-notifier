@@ -1,7 +1,7 @@
 {{ define "main" }}
 <h1>Hello {{ .User.Email }}</h1>
-<h2 id="select-header">Select album(s)</h2>
-<form hx-post="notifypost" hx-target="#select-header">
+<h2 id="select-header">Select album(s) for User: {{ .User.Name }}</h2>
+<form hx-post="notifypost" hx-target="#subscribe">
     <div class="album-list">
         {{ range .Albums }}
         <div class="thumbnail-container">
@@ -23,7 +23,8 @@
         </div>
         {{ end }}
     </div>
-    <button type="submit">Save subscription me!</button>
+    <button class="subscribe-button" type="submit">Notify me!</button>
+    <div id="subscribe"></div>
 </form>
 {{ end }}
 

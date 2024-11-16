@@ -3,9 +3,12 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"github.com/eyko139/immich-notifier/internal/models"
 	"html/template"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"github.com/eyko139/immich-notifier/internal/models"
 )
 
 type Helper struct {
@@ -35,7 +38,13 @@ func (h *Helper) Render(w http.ResponseWriter, template string, data any) {
 }
 
 func (h *Helper) ReturnHtml(w http.ResponseWriter, templateName string, data any) {
-	ts, err := template.ParseFiles(fmt.Sprintf("../../ui/html/singles/%s", templateName))
+	cwd, err := os.Getwd() 
+	if err != nil {
+		panic(err)
+	}
+	staticPath := filepath.Join(cwd, "ui/html/singles")
+
+	ts, err := template.ParseFiles(staticPath + "/" + templateName)
 	if err != nil {
 		panic("Error parsing partial")
 	}
@@ -46,7 +55,13 @@ func (h *Helper) ReturnHtml(w http.ResponseWriter, templateName string, data any
 }
 
 func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, data any) {
-	ts, err := template.ParseFiles(fmt.Sprintf("../../ui/html/singles/%s", templateName))
+	cwd, err := os.Getwd() 
+	if err != nil {
+		panic(err)
+	}
+	staticPath := filepath.Join(cwd, "ui/html/singles")
+
+	ts, err := template.ParseFiles(staticPath + "/" + templateName)
 	if err != nil {
 		panic("Error parsing partial")
 	}
@@ -56,9 +71,9 @@ func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, dat
 	}
 }
 
-func (h *Helper) NewTemplateData(albums []models.Album, email string) *models.TemplateData {
+func (h *Helper) NewTemplateData(albums []models.Album, email, name string) *models.TemplateData {
 	return &models.TemplateData{
 		Albums: albums,
-		User:   models.UserContext{Email: email},
+        User:   models.UserContext{Email: email, Name: name},
 	}
 }
