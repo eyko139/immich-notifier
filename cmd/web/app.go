@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"github.com/alexedwards/scs/v2"
+	"github.com/eyko139/scs/mongodbstore"
+	"github.com/eyko139/scs/v2"
 	"github.com/coreos/go-oidc"
 	"github.com/eyko139/immich-notifier/cmd/util"
 	"github.com/eyko139/immich-notifier/internal/auth"
@@ -15,10 +16,6 @@ import (
 	"log"
 	"os"
 	"time"
-)
-
-const (
-	NotificationInterval = 20 * time.Second
 )
 
 type App struct {
@@ -40,21 +37,33 @@ func NewApp(env *env.Env) *App {
 	errLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 
-	sessionManager = scs.New()
-	sessionManager.Lifetime = 24 * time.Hour
-	sessionManager.Cookie.Secure = false // Enable secure cookie in production
 
     infoLog.Printf("Connecting to DB %s", env.DbConnectionString)
-	client, err := mongo.Connect(options.Client().ApplyURI(env.DbConnectionString))
+    options := options.Client().SetTimeout(5 * time.Second).ApplyURI(env.DbConnectionString)
 
+	client, err := mongo.Connect(options)
 	if err != nil {
 		errLog.Printf("Failed to connect to DB %s", err)
 	}
-	pingErr := client.Ping(context.Background(), nil)
+
+    pingCtx := context.Background()
+    ctx, cancel := context.WithTimeout(pingCtx, 5 * time.Second)
+    defer cancel()
+	pingErr := client.Ping(ctx, nil)
 
 	if pingErr != nil {
 		errLog.Printf("Database Ping failed, err: %s", pingErr)
 	}
+
+    db:= client.Database("Notify")
+    
+	sessionManager = scs.New()
+    sessionManager.Store = mongodbstore.New(db)
+	sessionManager.Lifetime = 24 * time.Hour
+	sessionManager.Cookie.Secure = false // Enable secure cookie in production
+
+
+
 
 	tc, err := models.NewTemplateCache()
 
@@ -69,9 +78,9 @@ func NewApp(env *env.Env) *App {
 		ErrorLog:       errLog,
 		InfoLog:        infoLog,
 		Helper:         helper,
-		Users:          models.NewUserModel(client),
-		Immich:         models.NewImmichModel(client, env),
-		Notifier:       notifier.New(client, env, NotificationInterval, models.NewImmichModel(client, env), errLog, infoLog),
+		Users:          models.NewUserModel(db),
+		Immich:         models.NewImmichModel(db, env),
+		Notifier:       notifier.New(client, env, models.NewImmichModel(db, env), errLog, infoLog),
 		OauthConfig:    oAuthConfig,
 		OauthProvider:  provider,
 		Env:            env,

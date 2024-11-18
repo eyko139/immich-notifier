@@ -33,10 +33,10 @@ type AlbumSubscription struct {
 }
 
 type UserModel struct {
-	DbClient *mongo.Client
+	DbClient *mongo.Database
 }
 
-func NewUserModel(client *mongo.Client) *UserModel {
+func NewUserModel(client *mongo.Database) *UserModel {
 	return &UserModel{
 		DbClient: client,
 	}
@@ -44,7 +44,7 @@ func NewUserModel(client *mongo.Client) *UserModel {
 
 func (um *UserModel) UpdateSubscription(email string, subscription AlbumSubscription) error {
 
-	coll := um.DbClient.Database("Notify").Collection("users")
+	coll := um.DbClient.Collection("users")
 
 	filter := bson.D{
 		{
@@ -85,7 +85,7 @@ func (um *UserModel) RemoveSubscription(email string, albumId string) (string, e
 
 	update := bson.M{"$pull": bson.M{"subscriptions": bson.M{"id": albumId}}}
 
-	_, err := um.DbClient.Database("Notify").Collection("users").UpdateOne(context.TODO(), filter, update)
+	_, err := um.DbClient.Collection("users").UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +98,7 @@ func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 			Key: "email", Value: email,
 		},
 	}
-	res := um.DbClient.Database("Notify").Collection("users").FindOne(context.TODO(), filter)
+	res := um.DbClient.Collection("users").FindOne(context.TODO(), filter)
 
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 		user := bson.M{
@@ -106,7 +106,7 @@ func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 			"name":  name,
 		}
 		fmt.Printf("No user found for email: %s, creating...", email)
-		_, err := um.DbClient.Database("Notify").Collection("users").InsertOne(context.TODO(), user)
+		_, err := um.DbClient.Collection("users").InsertOne(context.TODO(), user)
 		if err != nil {
 			fmt.Println("Error creating user")
 		}
@@ -129,7 +129,7 @@ func (um *UserModel) ActivateSubscriptions(userName string, chatId int) error {
 
 	update := bson.M{"$set": bson.M{"chatId": chatId}}
 
-	res := um.DbClient.Database("Notify").Collection("users").FindOneAndUpdate(context.TODO(), filter, update)
+	res := um.DbClient.Collection("users").FindOneAndUpdate(context.TODO(), filter, update)
 	if errors.Is(res.Err(), mongo.ErrNoDocuments) {
 		fmt.Println("No user found")
 	}

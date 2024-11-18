@@ -29,9 +29,9 @@ type Notification struct {
 	Priority int    `json:"priority"`
 }
 
-func New(client *mongo.Client, env *env.Env, interval time.Duration, immich *models.ImmichModel, errLog *log.Logger, infoLog *log.Logger) *Notifier {
+func New(client *mongo.Client, env *env.Env,  immich *models.ImmichModel, errLog *log.Logger, infoLog *log.Logger) *Notifier {
 	return &Notifier{
-		interval: interval,
+		interval: time.Duration(env.ImmichPollInterval) * time.Second,
 		client:   client,
 		env:      env,
 		immich:   immich,

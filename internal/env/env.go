@@ -15,6 +15,7 @@ type Env struct {
 	ImmichApiKey       string
 	AppPort            string
 	AppEnv             string
+    ImmichPollInterval int
 }
 
 func New() *Env {
@@ -33,6 +34,9 @@ func New() *Env {
 
 	viper.BindEnv("GOTIFY_URL")
 	viper.SetDefault("GOTIFY_URL", "https://gotify.itsmelon.com/message")
+
+    viper.BindEnv("IMMICH_POLL_INTERVAL_SECONDS")
+    viper.SetDefault("IMMICH_POLL_INTERVAL_SECONDS", 60)
 
 	viper.BindEnv("OIDC_CLIENT_ID")
 	viper.BindEnv("OIDC_CLIENT_SECRET")
@@ -59,5 +63,6 @@ func New() *Env {
 	env.OidcRedirectUrl = viper.GetString("OIDC_REDIRECT_URL")
 	env.AppPort = viper.GetString("APP_PORT")
 	env.AppEnv = viper.GetString("APP_ENV")
+    env.ImmichPollInterval = viper.GetInt("IMMICH_POLL_INTERVAL_SECONDS")
 	return env
 }

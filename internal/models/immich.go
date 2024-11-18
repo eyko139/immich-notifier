@@ -39,11 +39,11 @@ type Album struct {
 }
 
 type ImmichModel struct {
-	DbClient *mongo.Client
+	DbClient *mongo.Database
 	env      *env.Env
 }
 
-func NewImmichModel(client *mongo.Client, env *env.Env) *ImmichModel {
+func NewImmichModel(client *mongo.Database, env *env.Env) *ImmichModel {
 	return &ImmichModel{
 		DbClient: client,
 		env:      env,
@@ -106,13 +106,13 @@ func (im *ImmichModel) InsertOrAlbum(album Album) {
 			Key: "id", Value: album.Id,
 		},
 	}
-	res := im.DbClient.Database("Notify").Collection("albums").FindOneAndReplace(context.TODO(), filter, album, nil)
+	res := im.DbClient.Collection("albums").FindOneAndReplace(context.TODO(), filter, album, nil)
 
 	if res.Err() == nil {
 		return
 	}
 
-	_, err := im.DbClient.Database("Notify").Collection("albums").InsertOne(context.TODO(), album, nil)
+	_, err := im.DbClient.Collection("albums").InsertOne(context.TODO(), album, nil)
 	if err != nil {
 		fmt.Printf("Error saving album: %s", err)
 	}
@@ -122,7 +122,7 @@ func (im *ImmichModel) UpdateSubscription(user User) {
 
 	update := bson.D{{Key: "$set", Value: bson.D{{Key: "subscriptions", Value: user.Subscriptions}}}}
 
-	_, err := im.DbClient.Database("Notify").Collection("users").UpdateByID(context.TODO(), user.ID, update)
+	_, err := im.DbClient.Collection("users").UpdateByID(context.TODO(), user.ID, update)
 	if err != nil {
 		fmt.Printf("Failed to update: %s", err)
 	}
