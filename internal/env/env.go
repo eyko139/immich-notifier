@@ -24,8 +24,10 @@ func New() *Env {
 	viper.SetDefault("IMMICH_URL", "https://immich.itsmelon.com")
 	viper.BindEnv("IMMICH_API_KEY")
 
-	viper.BindEnv("DB_CONNECTION_STRING")
-	viper.SetDefault("DB_CONNECTION_STRING", "mongodb://root:password@localhost:27017")
+    err := viper.BindEnv("DB_CONNECTION_STRING")
+    if err != nil {
+        panic(err)
+    }
 
 	viper.BindEnv("GOTIFY_KEY")
 

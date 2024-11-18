@@ -25,6 +25,9 @@ form {
     padding: 10px;
     justify-content: center;
     gap: 10px;
+    @media only screen and (max-width: 768px) {
+        width: 100%;
+    }
 }
 
 .thumbnail-header {
@@ -32,6 +35,11 @@ form {
     height: 30%;
     flex-direction: column;
     gap: 10px;
+    width: 100%;
+    @media only screen and (max-width: 768px) {
+        width: 100%;
+        height: 15%;
+    }
 }
 
 .thumbnail-title {
@@ -167,7 +175,7 @@ form {
 }
 
 .album-container {
-    height: 70%;
+    height: 80%;
 }
 
 .subscribe-button {
@@ -239,7 +247,7 @@ input:checked + .slider:before {
 } 
 .toggle-container {
     display: flex;
-    justify-content: space-around;
+    justify-content: end;
     align-items: center;
     width: 75%;
 }
@@ -256,4 +264,20 @@ input:checked + .slider:before {
 .fa-check {
     font-size: 25px;
     color: green;
+}
+.thumbnail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.thumbnail-count {
+    white-space: nowrap;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px; 
 }

@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	NotificationInterval = 10 * time.Second
+	NotificationInterval = 20 * time.Second
 )
 
 type App struct {
@@ -44,6 +44,7 @@ func NewApp(env *env.Env) *App {
 	sessionManager.Lifetime = 24 * time.Hour
 	sessionManager.Cookie.Secure = false // Enable secure cookie in production
 
+    infoLog.Printf("Connecting to DB %s", env.DbConnectionString)
 	client, err := mongo.Connect(options.Client().ApplyURI(env.DbConnectionString))
 
 	if err != nil {

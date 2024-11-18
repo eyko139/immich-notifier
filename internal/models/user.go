@@ -23,6 +23,7 @@ type UserContext struct {
 	Email             string
 	Name              string
 	TelegramAvailable bool
+	Authenticated     bool
 }
 
 type AlbumSubscription struct {

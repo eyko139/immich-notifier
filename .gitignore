@@ -2,4 +2,6 @@
 .idea
 database/database
 tmp
+env.list
+notifier
 

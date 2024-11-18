@@ -126,6 +126,9 @@ func (a *App) handleCallback() http.HandlerFunc {
 			http.Error(w, "Failed to parse ID Token claims: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+        if claims.Email == "" || claims.Name == "" {
+            http.Error(w, "Missing email or username in token: "+err.Error(), http.StatusInternalServerError)
+        }
 		sessionManager.Put(r.Context(), "authenticated", true)
 		sessionManager.Put(r.Context(), "user_email", claims.Email)
 		sessionManager.Put(r.Context(), "user_name", claims.Name)
@@ -137,6 +140,7 @@ func (a *App) handleCallback() http.HandlerFunc {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
+
 func generateState() (string, error) {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
@@ -168,4 +172,17 @@ func (a *App) subAlbumPost() http.HandlerFunc {
             a.ErrorLog.Printf("Failed to update album subscription: %s", err.Error())
         }
 	}
+}
+
+func (a *App) logout() http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        sessionManager.Destroy(r.Context())
+        w.Header().Set("HX-Location", "/logout-success")
+    }
+}
+
+func (a *App) logoutSuccess() http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        a.Helper.Render(w, "logout.html", nil)
+    }
 }

@@ -1,52 +1,63 @@
 {{ define "main" }}
-<h1>Hello, {{ .User.Name }}!</h1>
+<div class="main-header">
+  <h1>Hello, {{ .User.Name }}!</h1>
+  <button hx-get="/logout" class="logout-button">
+    Logout <i class="fas fa-sign-out-alt"></i>
+  </button>
+</div>
 {{ if .User.TelegramAvailable }}
-<div class="telegram-setup">Telegram available: <i class="fas fa-check"></i></div>
+<div class="telegram-setup">
+  Telegram status: <i class="fas fa-check"></i>
+</div>
 {{ else }}
 <div class="telegram-setup">
-  <span> <i class="fa-solid fa-triangle-exclamation"></i>  Telegram setup required! Click:  </span>
+  <span>
+    <i class="fa-solid fa-triangle-exclamation"></i> Telegram setup required!
+    Click:
+  </span>
   <a href="https://t.me/MelonStickBot?start={{ .User.Name }}" target="_blank">
     <i class="fa-brands fa-telegram"> </i>
   </a>
 </div>
 {{ end }}
-  <div class="album-list">
-    {{ range .Albums }}
-    <div class="thumbnail-container">
-      <div class="thumbnail-header">
-        <div class="thumbnail-title">Album: {{ .AlbumName }}</div>
-        <div class="thumbnail-count"># Photos: {{ .AssetCount }}</div>
-      </div>
-      <div class="album-container">
-        <img
-          class="album-thumbnail"
-          src="data:image/jpg;base64, {{ .B64Thumbnail }}"
-        />
-      </div>
-      <div class="toggle-container">
-          <span>Subscribe: </span>
-      <label for="{{ .Id }}" class="switch">
-        <input
-          hx-post="subscribe/{{ .Id }}"
-          hx-indicator="#spinner{{ .Id }}"
-          id="{{ .Id }}"
-          type="checkbox"
-          name="album"
-          value="{{ .Id }}"
-          {{
-          if
-          .IsSubscribed
-          }}checked{{end}}
-        />
-        <span class="slider round"></span>
-        <div id="spinner{{ .Id }}" class="htmx-indicator">
-          <i class="fas fa-spinner fa-spin"></i>
+<div class="album-list">
+  {{ range .Albums }}
+  <div class="thumbnail-container">
+    <div class="thumbnail-header">
+      <div class="thumbnail-title">{{ .AlbumName }}</div>
+      <div class="thumbnail-actions">
+        <div class="thumbnail-count">Photos: {{ .AssetCount }}</div>
+        <div class="toggle-container">
+          <label for="{{ .Id }}" class="switch">
+            <input
+              hx-post="subscribe/{{ .Id }}"
+              hx-indicator="#spinner{{ .Id }}"
+              id="{{ .Id }}"
+              type="checkbox"
+              name="album"
+              value="{{ .Id }}"
+              {{
+              if
+              .IsSubscribed
+              }}checked{{end}}
+            />
+            <span class="slider round"></span>
+            <div id="spinner{{ .Id }}" class="htmx-indicator">
+              <i class="fas fa-spinner fa-spin"></i>
+            </div>
+          </label>
         </div>
-      </label>
       </div>
     </div>
-    {{ end }}
+    <div class="album-container">
+      <img
+        class="album-thumbnail"
+        src="data:image/jpg;base64, {{ .B64Thumbnail }}"
+      />
+    </div>
   </div>
+  {{ end }}
+</div>
 <style>
   a {
       display: inline-flex;
