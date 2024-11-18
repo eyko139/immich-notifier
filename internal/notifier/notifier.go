@@ -57,9 +57,6 @@ func (n *Notifier) StartLoop() {
 		}
 		for _, user := range result {
 			for idx, subscription := range user.Subscriptions {
-				if !subscription.IsSubscribed {
-					continue
-				}
 				if err != nil {
 					fmt.Println("error fetching album")
 				}
@@ -68,17 +65,39 @@ func (n *Notifier) StartLoop() {
 				if album.UpdatedAt.After(subscription.LastNotified) {
 					user.Subscriptions[idx].LastNotified = time.Now()
 					n.immich.UpdateSubscription(user)
-					n.Notify(user, subscription, album.Assets[0].ID)
+					n.Notify(user, album, subscription) 
 				}
 			}
 		}
 	}
 }
 
-func (n *Notifier) Notify(user models.User, sub models.AlbumSubscription, latestAssetId string) {
-	thumbBytes := n.immich.FetchThumbnail(latestAssetId)
+func (n *Notifier) Notify(user models.User, album models.Album, sub models.AlbumSubscription) {
+    if len(album.Assets) == 0 {
+        return
+    }
+    latestAssedId := album.Assets[0].ID
+	thumbBytes := n.immich.FetchThumbnail(latestAssedId)
 	n.Gotify(user, sub)
 	n.Telegram(user, thumbBytes, sub)
+}
+
+
+func (n *Notifier) SendTelegramMessage(chatId int, message string) {
+
+    messageRequest := buildMessageRequest(chatId, message)
+
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	thumbResponse, err := client.Do(messageRequest)
+
+	if err != nil {
+		n.errLog.Println("Error sending thumbnail" + err.Error())
+	}
+
+	n.infoLog.Printf("Sent update thumbnail %+v", thumbResponse)
 }
 
 func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) {
@@ -118,4 +137,20 @@ func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) {
 		fmt.Printf("failed to notify: %s", err)
 	}
 	n.infoLog.Printf("Sent gotify notification, res: %v", res)
+}
+
+func buildMessageRequest(chatId int, message string) *http.Request {
+	url := BotUrl + "/sendMessage"
+	a := []struct {
+		ChatId int    `json:"chat_id"`
+		Text   string `json:"text"`
+	}{{
+		ChatId: chatId,
+		Text:   message,
+	}}
+
+	messageBytes, _ := json.Marshal(a[0])
+	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(messageBytes))
+	req.Header.Set(ContentType, JsonContentType)
+	return req
 }

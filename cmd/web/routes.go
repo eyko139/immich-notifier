@@ -28,7 +28,7 @@ func (a *App) Routes() http.Handler {
 
 	protected := dynamic.Append(a.requireAuthentication)
 	router.Handler(http.MethodGet, "/", protected.ThenFunc(a.home()))
-	router.Handler(http.MethodPost, "/notifypost", protected.ThenFunc(a.notifyPost()))
+    router.Handler(http.MethodPost, "/subscribe/:albumId", protected.ThenFunc(a.subAlbumPost()))
 	standard := alice.New(a.LogRequests, secureHeaders)
 	return standard.Then(router)
 

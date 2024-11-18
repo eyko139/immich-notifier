@@ -38,7 +38,7 @@ func (h *Helper) Render(w http.ResponseWriter, template string, data any) {
 }
 
 func (h *Helper) ReturnHtml(w http.ResponseWriter, templateName string, data any) {
-	cwd, err := os.Getwd() 
+	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +55,7 @@ func (h *Helper) ReturnHtml(w http.ResponseWriter, templateName string, data any
 }
 
 func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, data any) {
-	cwd, err := os.Getwd() 
+	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
@@ -71,9 +71,9 @@ func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, dat
 	}
 }
 
-func (h *Helper) NewTemplateData(albums []models.Album, email, name string) *models.TemplateData {
+func (h *Helper) NewTemplateData(albums []models.Album, email, name string, telegramAvailable bool) *models.TemplateData {
 	return &models.TemplateData{
 		Albums: albums,
-        User:   models.UserContext{Email: email, Name: name},
+		User:   models.UserContext{Email: email, Name: name, TelegramAvailable: telegramAvailable},
 	}
 }

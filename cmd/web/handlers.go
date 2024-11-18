@@ -5,13 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/coreos/go-oidc"
-	"github.com/eyko139/immich-notifier/internal/models"
-	"golang.org/x/oauth2"
+	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
+
+	"github.com/coreos/go-oidc"
+	"github.com/eyko139/immich-notifier/internal/models"
+	"github.com/julienschmidt/httprouter"
+	"golang.org/x/oauth2"
 )
 
 var stateStore = make(map[string]bool)
@@ -20,8 +22,12 @@ func (a *App) home() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mail := a.SessionManager.GetString(r.Context(), "user_email")
 		name := a.SessionManager.GetString(r.Context(), "user_name")
+
 		albums, _ := a.Immich.FetchAlbums()
 		user, err := a.Users.FindOrInsertUser(name, mail)
+
+		a.SessionManager.Put(r.Context(), "user_chatId", user.ChatId)
+
 		if err != nil {
 			a.ErrorLog.Println("no user found")
 		}
@@ -32,47 +38,8 @@ func (a *App) home() http.HandlerFunc {
 				}
 			}
 		}
-		templateData := a.Helper.NewTemplateData(albums, mail, name)
+		templateData := a.Helper.NewTemplateData(albums, mail, name, user.ChatId != 0)
 		a.Helper.Render(w, "home.html", templateData)
-	}
-}
-
-func (a *App) notifyPost() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		user := a.GetCurrentUser(r)
-
-		user.Subscriptions = []models.AlbumSubscription{}
-
-		if err != nil {
-			a.ErrorLog.Println("Failed to parse form")
-		}
-		for key, value := range r.Form {
-			if key == "album" {
-				for _, val := range value {
-					var subscription models.AlbumSubscription
-					album, err := a.Immich.FetchAlbumsDetails(val)
-					if err != nil {
-						a.ErrorLog.Printf("Error fetching api details: %s", err)
-					}
-					subscription.Id = album.Id
-					subscription.AlbumName = album.AlbumName
-					subscription.LastNotified = time.Now()
-					subscription.IsSubscribed = false
-					user.Subscriptions = append(user.Subscriptions, subscription)
-				}
-			}
-		}
-		res, _ := a.Users.SaveSubscription(user)
-		a.InfoLog.Println(res)
-
-		type NotifyEmail struct {
-			UserName string
-		}
-
-		data := NotifyEmail{UserName: url.QueryEscape(user.Name)}
-
-		a.Helper.ReturnPlainHtml(w, "notify.html", data)
 	}
 }
 
@@ -90,6 +57,7 @@ func (a *App) botHook() http.HandlerFunc {
 				a.InfoLog.Println("Bothook query: " + parts[1])
 				userName := parts[1]
 				err := a.Users.ActivateSubscriptions(userName, botResponse.Message.From.Id)
+                a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", "https://bot.itsmelon.com"))
 				if err != nil {
 					a.ErrorLog.Println("Failed to activate subscription")
 				}
@@ -176,4 +144,28 @@ func generateState() (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+func (a *App) subAlbumPost() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		params := httprouter.ParamsFromContext(r.Context())
+		id := params.ByName("albumId")
+		a.InfoLog.Println("Subscribing to album: " + id)
+
+		user := a.GetCurrentSessionUser(r)
+
+		var subscription models.AlbumSubscription
+		album, err := a.Immich.FetchAlbumsDetails(id)
+		if err != nil {
+			a.ErrorLog.Printf("Error fetching api details: %s", err)
+		}
+		subscription.Id = album.Id
+		subscription.AlbumName = album.AlbumName
+		subscription.LastNotified = time.Now()
+		user.Subscriptions = append(user.Subscriptions, subscription)
+
+        if err := a.Users.UpdateSubscription(user.Email, subscription); err != nil {
+            a.ErrorLog.Printf("Failed to update album subscription: %s", err.Error())
+        }
+	}
 }
