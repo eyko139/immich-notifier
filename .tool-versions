@@ -1,3 +1,4 @@
 golang 1.23.2
 direnv
 export direnv 2.31.0
+dive 0.12.0

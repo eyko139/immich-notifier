@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.23.2 as builder
+FROM golang:1.23.2 AS builder
 
 # Set destination for COPY
 WORKDIR /app
@@ -17,11 +17,12 @@ COPY ./ui ./ui
 
 
 # Build
-RUN go build -o notifier ./cmd/web
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notifier ./cmd/web
 
 FROM alpine:latest
 
 WORKDIR /app
+
 COPY --from=builder /app/notifier .
 
 # Run
