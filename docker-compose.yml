@@ -1,7 +1,7 @@
 # docker-compose.yml
 services:
   notifier:
-    image: notifier
+    image: slideregistry.azurecr.io/notifier:834d1a8cebabf2dbbe6505f78d838d83b2c12377
     container_name: notifier
     ports:
       - ${APP_PORT}:${APP_PORT}
