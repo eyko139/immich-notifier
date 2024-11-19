@@ -35,3 +35,6 @@ jobs:
             registry-password: ${{ secrets.REGISTRY_PASSWORD }}
             name: notifier
             location: 'west us'
+        - name: Trigger Portainer Webhook
+          run: |
+            curl -X POST ${{ secrets.PORTAINER_WEBHOOK_URL }}?IMAGE_TAG=${{ github.sha }}
