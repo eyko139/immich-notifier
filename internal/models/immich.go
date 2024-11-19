@@ -22,6 +22,12 @@ type Immich struct {
 	url string
 }
 
+type AlbumUser struct {
+	Id    string `json:"id" bson:"id"`
+	Email string `json:"email" bson:"email"`
+	Name  string `json:"name" bson:"name"`
+}
+
 type Album struct {
 	AlbumName             string    `json:"albumName" bson:"albumName"`
 	Description           string    `json:"description" bson:"description"`
@@ -35,12 +41,9 @@ type Album struct {
 	Assets                []struct {
 		ID string `json:"id"`
 	}
+    Owner AlbumUser `json:"owner" bson:"owner"`
 	AlbumUsers []struct {
-		User struct {
-			Id    string `json:"id" bson:"id"`
-			Email string `json:"email" bson:"email"`
-			Name  string `json:"name" bson:"name"`
-		} `json:"user" bson:"user"`
+		User AlbumUser `json:"user" bson:"user"`
 	} `json:"albumUsers" bson:"albumUsers"`
 }
 
@@ -152,7 +155,7 @@ func (im *ImmichModel) FetchThumbnail(uuid string) []byte {
 }
 
 func IsNotEmptyAndVisible(userEmail string, album Album) bool {
-	var visible bool
+    visible := album.Owner.Email == userEmail
 	for _, users := range album.AlbumUsers {
 		if users.User.Email == userEmail {
 			visible = true
