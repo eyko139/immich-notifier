@@ -23,7 +23,7 @@ func (a *App) home() http.HandlerFunc {
 		mail := a.SessionManager.GetString(r.Context(), "user_email")
 		name := a.SessionManager.GetString(r.Context(), "user_name")
 
-		albums, _ := a.Immich.FetchAlbums()
+		albums, _ := a.Immich.FetchAlbums(mail)
 		user, err := a.Users.FindOrInsertUser(name, mail)
 
 		a.SessionManager.Put(r.Context(), "user_chatId", user.ChatId)
@@ -60,7 +60,7 @@ func (a *App) botHook() http.HandlerFunc {
 					a.ErrorLog.Println("Failed to activate subscription, error: " + err.Error())
 					return
 				}
-				a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", "https://bot.itsmelon.com"))
+				a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", a.Env.WebsiteURL))
 			} else {
 				a.InfoLog.Println("Bothook called with no parameters")
 			}

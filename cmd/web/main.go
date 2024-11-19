@@ -12,6 +12,8 @@ func main() {
 
 	app := NewApp(env)
 
+    app.InfoLog.Println("Initialized app, starting notification loop")
+
 	go app.Notifier.StartLoop()
 
 	srv := http.Server{

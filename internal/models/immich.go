@@ -26,7 +26,6 @@ type Album struct {
 	AlbumName             string    `json:"albumName" bson:"albumName"`
 	Description           string    `json:"description" bson:"description"`
 	Id                    string    `json:"id" bson:"id"`
-	AlbumUsers            string    `json:"albumUsers" bson:"albumUsers"`
 	UpdatedAt             time.Time `json:"updatedAt" bson:"updatedAt"`
 	LastNotified          time.Time `json:"lastNotified" bson:"lastNotified"`
 	IsSubscribed          bool      `json:"isSubscribed" bson:"isSubscribed"`
@@ -36,6 +35,13 @@ type Album struct {
 	Assets                []struct {
 		ID string `json:"id"`
 	}
+	AlbumUsers []struct {
+		User struct {
+			Id    string `json:"id" bson:"id"`
+			Email string `json:"email" bson:"email"`
+			Name  string `json:"name" bson:"name"`
+		} `json:"user" bson:"user"`
+	} `json:"albumUsers" bson:"albumUsers"`
 }
 
 type ImmichModel struct {
@@ -50,7 +56,7 @@ func NewImmichModel(client *mongo.Database, env *env.Env) *ImmichModel {
 	}
 }
 
-func (im *ImmichModel) FetchAlbums() ([]Album, error) {
+func (im *ImmichModel) FetchAlbums(userEmail string) ([]Album, error) {
 	var albums []Album
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/albums", nil)
 	if err != nil {
@@ -68,7 +74,7 @@ func (im *ImmichModel) FetchAlbums() ([]Album, error) {
 	err = json.Unmarshal(resBytes, &albums)
 	defer res.Body.Close()
 
-	filteredAlbums := util.Filter(albums, IsNotEmpty)
+	filteredAlbums := util.Filter(userEmail, albums, IsNotEmptyAndVisible)
 
 	for idx, album := range filteredAlbums {
 		thumbNail := im.FetchThumbnail(album.AlbumThumbnailAssetId)
@@ -145,6 +151,12 @@ func (im *ImmichModel) FetchThumbnail(uuid string) []byte {
 	return bytes
 }
 
-func IsNotEmpty(album Album) bool {
-	return album.AssetCount != 0
+func IsNotEmptyAndVisible(userEmail string, album Album) bool {
+	var visible bool
+	for _, users := range album.AlbumUsers {
+		if users.User.Email == userEmail {
+			visible = true
+		}
+	}
+	return album.AssetCount != 0 && visible
 }

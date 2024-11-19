@@ -11,16 +11,14 @@ import (
 const (
 	ContentType        = "Content-Type"
 	JsonContentType    = "application/json"
-	BotUrl             = "https://api.telegram.org/bot6429398075:AAFjoY4mthOBReLML8qh_-Zj_K9LZdKWQKc"
 	GotifyAuthHeader   = "X-Gotify-Key"
-	ImmichAlbumBaseUrl = "https://immich.itsmelon.com/albums/"
 )
 
-func buildThumbnailRequest(thumbNailBytes []byte, chatId int, album models.AlbumSubscription) *http.Request {
+func buildThumbnailRequest(thumbNailBytes []byte, chatId int, album models.AlbumSubscription, botURL, immichAlbumBaseURL string) *http.Request {
 
-	caption := fmt.Sprintf("Update in album: <a href='%s'>%s</a>", ImmichAlbumBaseUrl+album.Id, album.AlbumName)
+	caption := fmt.Sprintf("Update in album: <a href='%s'>%s</a>", immichAlbumBaseURL+album.Id, album.AlbumName)
 
-	picUrl := BotUrl + "/sendPhoto"
+	picUrl := botURL + "/sendPhoto"
 
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)

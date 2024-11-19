@@ -15,7 +15,9 @@ type Env struct {
 	ImmichApiKey       string
 	AppPort            string
 	AppEnv             string
-    ImmichPollInterval int
+	ImmichPollInterval int
+	WebsiteURL         string
+	BotURL             string
 }
 
 func New() *Env {
@@ -25,18 +27,24 @@ func New() *Env {
 	viper.SetDefault("IMMICH_URL", "https://immich.itsmelon.com")
 	viper.BindEnv("IMMICH_API_KEY")
 
-    err := viper.BindEnv("DB_CONNECTION_STRING")
-    if err != nil {
-        panic(err)
-    }
+	err := viper.BindEnv("DB_CONNECTION_STRING")
+	if err != nil {
+		panic(err)
+	}
 
 	viper.BindEnv("GOTIFY_KEY")
 
 	viper.BindEnv("GOTIFY_URL")
 	viper.SetDefault("GOTIFY_URL", "https://gotify.itsmelon.com/message")
 
-    viper.BindEnv("IMMICH_POLL_INTERVAL_SECONDS")
-    viper.SetDefault("IMMICH_POLL_INTERVAL_SECONDS", 60)
+	viper.BindEnv("WEBSITE_URL")
+	viper.SetDefault("WEBSITE_URL", "https://bot.itsmelon.com")
+
+	viper.BindEnv("BOT_URL")
+	viper.SetDefault("BOT_URL", "https://api.telegram.org/bot6429398075:AAFjoY4mthOBReLML8qh_-Zj_K9LZdKWQKc")
+
+	viper.BindEnv("IMMICH_POLL_INTERVAL_SECONDS")
+	viper.SetDefault("IMMICH_POLL_INTERVAL_SECONDS", 60)
 
 	viper.BindEnv("OIDC_CLIENT_ID")
 	viper.BindEnv("OIDC_CLIENT_SECRET")
@@ -63,6 +71,7 @@ func New() *Env {
 	env.OidcRedirectUrl = viper.GetString("OIDC_REDIRECT_URL")
 	env.AppPort = viper.GetString("APP_PORT")
 	env.AppEnv = viper.GetString("APP_ENV")
-    env.ImmichPollInterval = viper.GetInt("IMMICH_POLL_INTERVAL_SECONDS")
+	env.ImmichPollInterval = viper.GetInt("IMMICH_POLL_INTERVAL_SECONDS")
+    env.BotURL = viper.GetString("BOT_URL")
 	return env
 }

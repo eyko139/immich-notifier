@@ -29,7 +29,7 @@ type Notification struct {
 	Priority int    `json:"priority"`
 }
 
-func New(client *mongo.Client, env *env.Env,  immich *models.ImmichModel, errLog *log.Logger, infoLog *log.Logger) *Notifier {
+func New(client *mongo.Client, env *env.Env, immich *models.ImmichModel, errLog *log.Logger, infoLog *log.Logger) *Notifier {
 	return &Notifier{
 		interval: time.Duration(env.ImmichPollInterval) * time.Second,
 		client:   client,
@@ -47,7 +47,6 @@ func (n *Notifier) StartLoop() {
 
 	for {
 		<-ticker.C
-		fmt.Println("Ticker ticket")
 		cursor, err := n.client.Database("Notify").Collection("users").Find(context.TODO(), bson.D{}, nil)
 		if err != nil {
 			fmt.Println(err)
@@ -61,11 +60,11 @@ func (n *Notifier) StartLoop() {
 					fmt.Println("error fetching album")
 				}
 				album, _ := n.immich.FetchAlbumsDetails(subscription.Id)
-				fmt.Printf("checking dates: albumUpdate: %s, subscriptionLastNotified: %s", album.UpdatedAt, subscription.LastNotified)
+				n.infoLog.Printf("checking dates: albumUpdate: %s, subscriptionLastNotified: %s", album.UpdatedAt, subscription.LastNotified)
 				if album.UpdatedAt.After(subscription.LastNotified) {
 					user.Subscriptions[idx].LastNotified = time.Now()
 					n.immich.UpdateSubscription(user)
-					n.Notify(user, album, subscription) 
+					n.Notify(user, album, subscription)
 				}
 			}
 		}
@@ -73,19 +72,18 @@ func (n *Notifier) StartLoop() {
 }
 
 func (n *Notifier) Notify(user models.User, album models.Album, sub models.AlbumSubscription) {
-    if len(album.Assets) == 0 {
-        return
-    }
-    latestAssedId := album.Assets[0].ID
+	if len(album.Assets) == 0 {
+		return
+	}
+	latestAssedId := album.Assets[0].ID
 	thumbBytes := n.immich.FetchThumbnail(latestAssedId)
 	n.Gotify(user, sub)
 	n.Telegram(user, thumbBytes, sub)
 }
 
-
 func (n *Notifier) SendTelegramMessage(chatId int, message string) {
 
-    messageRequest := buildMessageRequest(chatId, message)
+	messageRequest := buildMessageRequest(chatId, message, n.env.BotURL)
 
 	client := http.Client{
 		Timeout: 5 * time.Second,
@@ -102,7 +100,7 @@ func (n *Notifier) SendTelegramMessage(chatId int, message string) {
 
 func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) {
 
-	thumbNailRequest := buildThumbnailRequest(latestAssetBytes, user.ChatId, album)
+	thumbNailRequest := buildThumbnailRequest(latestAssetBytes, user.ChatId, album, n.env.BotURL, n.env.ImmichUrl+"/album/")
 
 	client := http.Client{
 		Timeout: 5 * time.Second,
@@ -139,8 +137,8 @@ func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) {
 	n.infoLog.Printf("Sent gotify notification, res: %v", res)
 }
 
-func buildMessageRequest(chatId int, message string) *http.Request {
-	url := BotUrl + "/sendMessage"
+func buildMessageRequest(chatId int, message, targetURL string) *http.Request {
+	url := targetURL + "/sendMessage"
 	a := []struct {
 		ChatId int    `json:"chat_id"`
 		Text   string `json:"text"`
