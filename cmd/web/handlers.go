@@ -23,14 +23,20 @@ func (a *App) home() http.HandlerFunc {
 		mail := a.SessionManager.GetString(r.Context(), "user_email")
 		name := a.SessionManager.GetString(r.Context(), "user_name")
 
-		albums, _ := a.Immich.FetchAlbums(mail)
+		albums, err := a.Immich.FetchAlbums(mail)
+
+        if err != nil {
+            a.ErrorLog.Printf("Error fetching albums: %s", err)
+        }
+
 		user, err := a.Users.FindOrInsertUser(name, mail)
+
+		if err != nil {
+            a.ErrorLog.Printf("Error fetching or inserting user: %s", err)
+		}
 
 		a.SessionManager.Put(r.Context(), "user_chatId", user.ChatId)
 
-		if err != nil {
-			a.ErrorLog.Println("no user found")
-		}
 		for _, sub := range user.Subscriptions {
 			for idx, album := range albums {
 				if sub.Id == album.Id {
@@ -154,15 +160,25 @@ func (a *App) subAlbumPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := httprouter.ParamsFromContext(r.Context())
 		id := params.ByName("albumId")
-		a.InfoLog.Println("Subscribing to album: " + id)
 
-		user := a.GetCurrentSessionUser(r)
+		user, err := a.GetCurrentSessionUser(r)
+
+        if err != nil {
+            a.ErrorLog.Printf("Error getting current session user: %s", err)
+            return 
+        }
+
+        a.InfoLog.Printf("User: %s subscribing to album: %s", user.Email, id)
 
 		var subscription models.AlbumSubscription
+
 		album, err := a.Immich.FetchAlbumsDetails(id)
+
 		if err != nil {
 			a.ErrorLog.Printf("Error fetching api details: %s", err)
+            return
 		}
+
 		subscription.Id = album.Id
 		subscription.AlbumName = album.AlbumName
 		subscription.LastNotified = time.Now()

@@ -47,24 +47,31 @@ func (n *Notifier) StartLoop() {
 
 	for {
 		<-ticker.C
+
 		cursor, err := n.client.Database("Notify").Collection("users").Find(context.TODO(), bson.D{}, nil)
 		if err != nil {
 			fmt.Println(err)
 		}
+
 		if err := cursor.All(context.TODO(), &result); err != nil {
 			fmt.Println("Error unpacking cursor")
 		}
+
 		for _, user := range result {
 			for idx, subscription := range user.Subscriptions {
-				if err != nil {
-					fmt.Println("error fetching album")
-				}
-				album, _ := n.immich.FetchAlbumsDetails(subscription.Id)
+
+				album, err := n.immich.FetchAlbumsDetails(subscription.Id)
+
+                if err != nil {
+                    n.errLog.Printf("Error fetching album: %s", err)
+                }
+
 				n.infoLog.Printf("checking dates: albumUpdate: %s, subscriptionLastNotified: %s", album.UpdatedAt, subscription.LastNotified)
+
 				if album.UpdatedAt.After(subscription.LastNotified) {
 					user.Subscriptions[idx].LastNotified = time.Now()
 					n.immich.UpdateSubscription(user)
-					n.Notify(user, album, subscription)
+					n.Notify(user, *album, subscription)
 				}
 			}
 		}

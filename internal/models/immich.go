@@ -62,17 +62,23 @@ func NewImmichModel(client *mongo.Database, env *env.Env) *ImmichModel {
 func (im *ImmichModel) FetchAlbums(userEmail string) ([]Album, error) {
 	var albums []Album
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/albums", nil)
+
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Add(ImmichApiHeader, im.env.ImmichApiKey)
+
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
+
 	res, err := client.Do(req)
+
 	if err != nil {
-		fmt.Println("error executing request")
+        return nil, err
 	}
+
 	resBytes, _ := io.ReadAll(res.Body)
 	err = json.Unmarshal(resBytes, &albums)
 	defer res.Body.Close()
@@ -88,24 +94,31 @@ func (im *ImmichModel) FetchAlbums(userEmail string) ([]Album, error) {
 	return filteredAlbums, nil
 }
 
-func (im *ImmichModel) FetchAlbumsDetails(albumId string) (Album, error) {
+func (im *ImmichModel) FetchAlbumsDetails(albumId string) (*Album, error) {
 	var album Album
+
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/albums/"+albumId, nil)
+
 	if err != nil {
-		fmt.Println("Error creating request")
+        return nil, err
 	}
+
 	req.Header.Add(ImmichApiHeader, im.env.ImmichApiKey)
+
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
+
 	res, err := client.Do(req)
+
 	if err != nil {
-		fmt.Println("error executing request")
+        return nil, err
 	}
+
 	resBytes, _ := io.ReadAll(res.Body)
 	err = json.Unmarshal(resBytes, &album)
 	defer res.Body.Close()
-	return album, nil
+	return &album, nil
 }
 
 func (im *ImmichModel) InsertOrAlbum(album Album) {
