@@ -71,9 +71,9 @@ func (h *Helper) ReturnPlainHtml(w http.ResponseWriter, templateName string, dat
 	}
 }
 
-func (h *Helper) NewTemplateData(albums []models.Album, email, name string, telegramAvailable bool) *models.TemplateData {
+func (h *Helper) NewTemplateData(albums []models.Album, email, name string, telegramAvailable bool, userId string) *models.TemplateData {
 	return &models.TemplateData{
 		Albums: albums,
-		User:   models.UserContext{Email: email, Name: name, TelegramAvailable: telegramAvailable, Authenticated: true},
+        User:   models.UserContext{Email: email, Name: name, TelegramAvailable: telegramAvailable, Authenticated: true, ID: userId},
 	}
 }

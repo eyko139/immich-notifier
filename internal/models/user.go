@@ -24,6 +24,7 @@ type UserContext struct {
 	Name              string
 	TelegramAvailable bool
 	Authenticated     bool
+	ID                string
 }
 
 type AlbumSubscription struct {
@@ -121,10 +122,15 @@ func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 	return user, nil
 }
 
-func (um *UserModel) ActivateSubscriptions(userName string, chatId int) error {
+func (um *UserModel) ActivateSubscriptions(userId string, chatId int) error {
+
+    id, err := bson.ObjectIDFromHex(userId)
+    if err != nil {
+        return err
+    }
 
 	filter := bson.M{
-		"name": userName,
+		"_id": id,
 	}
 
 	update := bson.M{"$set": bson.M{"chatId": chatId}}
@@ -134,13 +140,12 @@ func (um *UserModel) ActivateSubscriptions(userName string, chatId int) error {
 		fmt.Println("No user found")
 	}
 	if res.Err() != nil {
-		fmt.Println(res.Err())
+        return res.Err()
 	}
 	var user User
-	err := res.Decode(&user)
+	err = res.Decode(&user)
 	if err != nil {
-		fmt.Println("failed to decode user")
-		return nil
+		return err
 	}
 	return nil
 }

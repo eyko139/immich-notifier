@@ -38,7 +38,7 @@ func (a *App) home() http.HandlerFunc {
 				}
 			}
 		}
-		templateData := a.Helper.NewTemplateData(albums, mail, name, user.ChatId != 0)
+		templateData := a.Helper.NewTemplateData(albums, mail, name, user.ChatId != 0, user.ID.Hex())
 		a.Helper.Render(w, "home.html", templateData)
 	}
 }
@@ -55,12 +55,12 @@ func (a *App) botHook() http.HandlerFunc {
 			parts := strings.SplitN(botResponse.Message.Text, " ", 2)
 			if len(parts) > 1 {
 				a.InfoLog.Println("Bothook query: " + parts[1])
-				userName := parts[1]
-				err := a.Users.ActivateSubscriptions(userName, botResponse.Message.From.Id)
-                a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", "https://bot.itsmelon.com"))
-				if err != nil {
-					a.ErrorLog.Println("Failed to activate subscription")
+				userId := parts[1]
+				if err := a.Users.ActivateSubscriptions(userId, botResponse.Message.From.Id); err != nil {
+					a.ErrorLog.Println("Failed to activate subscription, error: " + err.Error())
+					return
 				}
+				a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", "https://bot.itsmelon.com"))
 			} else {
 				a.InfoLog.Println("Bothook called with no parameters")
 			}
@@ -126,9 +126,9 @@ func (a *App) handleCallback() http.HandlerFunc {
 			http.Error(w, "Failed to parse ID Token claims: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-        if claims.Email == "" || claims.Name == "" {
-            http.Error(w, "Missing email or username in token: "+err.Error(), http.StatusInternalServerError)
-        }
+		if claims.Email == "" || claims.Name == "" {
+			http.Error(w, "Missing email or username in token: "+err.Error(), http.StatusInternalServerError)
+		}
 		sessionManager.Put(r.Context(), "authenticated", true)
 		sessionManager.Put(r.Context(), "user_email", claims.Email)
 		sessionManager.Put(r.Context(), "user_name", claims.Name)
@@ -168,21 +168,21 @@ func (a *App) subAlbumPost() http.HandlerFunc {
 		subscription.LastNotified = time.Now()
 		user.Subscriptions = append(user.Subscriptions, subscription)
 
-        if err := a.Users.UpdateSubscription(user.Email, subscription); err != nil {
-            a.ErrorLog.Printf("Failed to update album subscription: %s", err.Error())
-        }
+		if err := a.Users.UpdateSubscription(user.Email, subscription); err != nil {
+			a.ErrorLog.Printf("Failed to update album subscription: %s", err.Error())
+		}
 	}
 }
 
 func (a *App) logout() http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        sessionManager.Destroy(r.Context())
-        w.Header().Set("HX-Location", "/logout-success")
-    }
+	return func(w http.ResponseWriter, r *http.Request) {
+		sessionManager.Destroy(r.Context())
+		w.Header().Set("HX-Location", "/logout-success")
+	}
 }
 
 func (a *App) logoutSuccess() http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        a.Helper.Render(w, "logout.html", nil)
-    }
+	return func(w http.ResponseWriter, r *http.Request) {
+		a.Helper.Render(w, "logout.html", nil)
+	}
 }
