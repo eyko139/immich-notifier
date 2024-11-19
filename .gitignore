@@ -1,6 +1,7 @@
 .envrc
 .idea
 database/database
+database/db
 tmp
 env.list
 notifier
