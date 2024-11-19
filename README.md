@@ -1,2 +1,5 @@
 # immich-notifier
+
 README
+
+WORKFLOW
