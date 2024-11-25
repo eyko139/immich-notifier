@@ -86,7 +86,11 @@ func (n *Notifier) Notify(user models.User, album models.Album, sub models.Album
 	latestAssedId := album.Assets[0].ID
 	thumbBytes := n.immich.FetchThumbnail(latestAssedId)
 	n.Gotify(user, sub)
-	n.Telegram(user, thumbBytes, sub)
+    res, err := n.Telegram(user, thumbBytes, sub)
+    if err != nil {
+        n.errLog.Printf("Error sending telegram message: %s", err)
+    }
+    n.infoLog.Printf("Sent telegram message, res: %v", res)
 }
 
 func (n *Notifier) SendTelegramMessage(chatId int, message string) (*http.Response, error) {
@@ -105,7 +109,7 @@ func (n *Notifier) SendTelegramMessage(chatId int, message string) (*http.Respon
     return thumbResponse, nil
 }
 
-func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) {
+func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) (*http.Response, error) {
 
 	thumbNailRequest := buildThumbnailRequest(latestAssetBytes, user.ChatId, album, n.env.BotURL, n.env.ImmichUrl+"/album/")
 
@@ -116,10 +120,10 @@ func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album mod
 	thumbResponse, err := client.Do(thumbNailRequest)
 
 	if err != nil {
-		n.errLog.Println("Error sending thumbnail" + err.Error())
+		return nil, err
 	}
+    return thumbResponse, nil
 
-	n.infoLog.Printf("Sent update thumbnail %+v", thumbResponse)
 }
 
 func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) {
