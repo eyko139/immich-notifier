@@ -15,7 +15,6 @@ COPY ./cmd ./cmd
 COPY ./internal ./internal
 COPY ./ui ./ui
 
-
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notifier ./cmd/web
 
@@ -25,6 +24,9 @@ WORKDIR /app
 
 COPY --from=builder /app/notifier .
 COPY --from=builder /app/ui ./ui
+
+ARG APP_VERSION
+ENV APP_VERSION=${APP_VERSION}
 
 # Run
 CMD ["./notifier"]

@@ -18,7 +18,11 @@ jobs:
           uses: azure/login@v1
           with:
             creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
+        # Extract the tag from the Git reference
+        - name: Extract Git tag
+          id: get_tag
+          run: echo "TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          
         - name: 'Build and push image'
           uses: azure/docker-login@v1
           with:
@@ -26,7 +30,7 @@ jobs:
             username: ${{ secrets.REGISTRY_USERNAME }}
             password: ${{ secrets.REGISTRY_PASSWORD }}
         - run: |
-            docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/notifier:${{ github.sha }}
+            docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/notifier:${{ github.sha }} --build-arg APP_VERSION=$TAG
             docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/notifier:${{ github.sha }}
 
         - name: Trigger Portainer Webhook
