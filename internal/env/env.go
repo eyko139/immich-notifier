@@ -18,6 +18,7 @@ type Env struct {
 	ImmichPollInterval int
 	WebsiteURL         string
 	BotURL             string
+	AppVersion         string
 }
 
 func New() *Env {
@@ -53,6 +54,8 @@ func New() *Env {
 
 	viper.BindEnv("API_KEY")
 
+	viper.BindEnv("APP_VERSION")
+
 	viper.BindEnv("APP_PORT")
 	viper.SetDefault("APP_PORT", "29442")
 
@@ -72,6 +75,7 @@ func New() *Env {
 	env.AppPort = viper.GetString("APP_PORT")
 	env.AppEnv = viper.GetString("APP_ENV")
 	env.ImmichPollInterval = viper.GetInt("IMMICH_POLL_INTERVAL_SECONDS")
-    env.BotURL = viper.GetString("BOT_URL")
+	env.BotURL = viper.GetString("BOT_URL")
+    env.AppVersion = viper.GetString("APP_VERSION")
 	return env
 }

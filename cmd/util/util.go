@@ -19,13 +19,15 @@ type Helper struct {
 	TemplateCache map[string]*template.Template
 	InfoLog       *log.Logger
 	ErrorLog      *log.Logger
+    AppVersion string
 }
 
-func New(templateCache map[string]*template.Template, errlog, infolog *log.Logger) *Helper {
+func New(templateCache map[string]*template.Template, errlog, infolog *log.Logger, appVersion string) *Helper {
 	return &Helper{
 		TemplateCache: templateCache,
         InfoLog: infolog,
         ErrorLog: errlog,
+        AppVersion: appVersion,
 	}
 }
 
@@ -67,6 +69,7 @@ func (h *Helper) NewTemplateData(albums []models.Album, email, name string, tele
 	return &models.TemplateData{
 		Albums: albums,
 		User:   models.UserContext{Email: email, Name: name, TelegramAvailable: telegramAvailable, Authenticated: true, ID: userId},
+        AppVersion: h.AppVersion,
 	}
 }
 

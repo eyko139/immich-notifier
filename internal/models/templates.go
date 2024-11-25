@@ -1,22 +1,22 @@
 package models
 
 import (
+	"fmt"
 	"html/template"
+	"os"
 	"path/filepath"
-    "fmt"
-    "os"
 )
 
 type TemplateData struct {
-	Albums []Album
-	User   UserContext
-
+	Albums     []Album
+	User       UserContext
+	AppVersion string
 }
 
 func NewTemplateCache() (map[string]*template.Template, error) {
-    htmlPath := "ui/html"
-    cwd, _ := os.Getwd()
-    fmt.Println(cwd)
+	htmlPath := "ui/html"
+	cwd, _ := os.Getwd()
+	fmt.Println(cwd)
 	cache := map[string]*template.Template{}
 	pages, err := filepath.Glob(htmlPath + "/pages/*.html")
 	if err != nil {

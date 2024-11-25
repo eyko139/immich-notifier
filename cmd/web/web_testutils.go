@@ -35,7 +35,7 @@ func newTestApplication(env *env.Env) *App {
 		errLog.Panicf("Failed to create templateCache, err: %s", err)
 	}
 
-	helper := util.New(tc, errLog, infoLog)
+	helper := util.New(tc, errLog, infoLog, "test")
 
     return &App{
         ErrorLog: errLog, 

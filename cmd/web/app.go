@@ -73,7 +73,7 @@ func NewApp(env *env.Env) *App {
 
 	oAuthConfig, provider := auth.NewOauthConfig(env.OidcIssuerUrl, env.OidcClientId, env.OidcClientSecret, env.OidcRedirectUrl)
 
-	helper := util.New(tc, errLog, infoLog)
+	helper := util.New(tc, errLog, infoLog, env.AppVersion)
 
 	return &App{
 		ErrorLog:       errLog,
