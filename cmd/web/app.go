@@ -22,8 +22,8 @@ type App struct {
 	ErrorLog       *log.Logger
 	InfoLog        *log.Logger
 	Helper         *util.Helper
-	Immich         *models.ImmichModel
-	Users          *models.UserModel
+	Immich         models.ImmichModelInterface
+	Users          models.UserModelInterface
 	Notifier       *notifier.Notifier
 	OauthConfig    *oauth2.Config
 	OauthProvider  *oidc.Provider
@@ -73,7 +73,8 @@ func NewApp(env *env.Env) *App {
 
 	oAuthConfig, provider := auth.NewOauthConfig(env.OidcIssuerUrl, env.OidcClientId, env.OidcClientSecret, env.OidcRedirectUrl)
 
-	helper := util.New(tc)
+	helper := util.New(tc, errLog, infoLog)
+
 	return &App{
 		ErrorLog:       errLog,
 		InfoLog:        infoLog,

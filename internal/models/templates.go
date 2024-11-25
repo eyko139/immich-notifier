@@ -2,8 +2,9 @@ package models
 
 import (
 	"html/template"
-	"os"
 	"path/filepath"
+    "fmt"
+    "os"
 )
 
 type TemplateData struct {
@@ -13,11 +14,9 @@ type TemplateData struct {
 }
 
 func NewTemplateCache() (map[string]*template.Template, error) {
-    cwd, err := os.Getwd() // Get the current working directory
-    if err != nil {
-        panic(err)
-    }
-    htmlPath := filepath.Join(cwd, "ui/html/")
+    htmlPath := "ui/html"
+    cwd, _ := os.Getwd()
+    fmt.Println(cwd)
 	cache := map[string]*template.Template{}
 	pages, err := filepath.Glob(htmlPath + "/pages/*.html")
 	if err != nil {

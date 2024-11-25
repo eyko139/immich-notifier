@@ -5,20 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/eyko139/immich-notifier/internal/env"
 	"github.com/eyko139/immich-notifier/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"log"
-	"net/http"
-	"time"
 )
 
 type Notifier struct {
 	interval time.Duration
 	client   *mongo.Client
 	env      *env.Env
-	immich   *models.ImmichModel
+	immich   models.ImmichModelInterface
 	errLog   *log.Logger
 	infoLog  *log.Logger
 }
@@ -88,7 +89,7 @@ func (n *Notifier) Notify(user models.User, album models.Album, sub models.Album
 	n.Telegram(user, thumbBytes, sub)
 }
 
-func (n *Notifier) SendTelegramMessage(chatId int, message string) {
+func (n *Notifier) SendTelegramMessage(chatId int, message string) (*http.Response, error) {
 
 	messageRequest := buildMessageRequest(chatId, message, n.env.BotURL)
 
@@ -101,8 +102,7 @@ func (n *Notifier) SendTelegramMessage(chatId int, message string) {
 	if err != nil {
 		n.errLog.Println("Error sending thumbnail" + err.Error())
 	}
-
-	n.infoLog.Printf("Sent update thumbnail %+v", thumbResponse)
+    return thumbResponse, nil
 }
 
 func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) {

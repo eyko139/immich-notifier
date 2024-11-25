@@ -41,7 +41,7 @@ type Album struct {
 	Assets                []struct {
 		ID string `json:"id"`
 	}
-    Owner AlbumUser `json:"owner" bson:"owner"`
+	Owner      AlbumUser `json:"owner" bson:"owner"`
 	AlbumUsers []struct {
 		User AlbumUser `json:"user" bson:"user"`
 	} `json:"albumUsers" bson:"albumUsers"`
@@ -50,6 +50,14 @@ type Album struct {
 type ImmichModel struct {
 	DbClient *mongo.Database
 	env      *env.Env
+}
+
+type ImmichModelInterface interface {
+	FetchAlbums(userEmail string) ([]Album, error)
+	FetchAlbumsDetails(albumId string) (*Album, error)
+	InsertOrAlbum(album Album)
+    UpdateSubscription(user User)
+    FetchThumbnail(uuid string) []byte 
 }
 
 func NewImmichModel(client *mongo.Database, env *env.Env) *ImmichModel {
@@ -76,7 +84,7 @@ func (im *ImmichModel) FetchAlbums(userEmail string) ([]Album, error) {
 	res, err := client.Do(req)
 
 	if err != nil {
-        return nil, err
+		return nil, err
 	}
 
 	resBytes, _ := io.ReadAll(res.Body)
@@ -100,7 +108,7 @@ func (im *ImmichModel) FetchAlbumsDetails(albumId string) (*Album, error) {
 	req, err := http.NewRequest(http.MethodGet, im.env.ImmichUrl+"/api/albums/"+albumId, nil)
 
 	if err != nil {
-        return nil, err
+		return nil, err
 	}
 
 	req.Header.Add(ImmichApiHeader, im.env.ImmichApiKey)
@@ -112,7 +120,7 @@ func (im *ImmichModel) FetchAlbumsDetails(albumId string) (*Album, error) {
 	res, err := client.Do(req)
 
 	if err != nil {
-        return nil, err
+		return nil, err
 	}
 
 	resBytes, _ := io.ReadAll(res.Body)
@@ -168,7 +176,7 @@ func (im *ImmichModel) FetchThumbnail(uuid string) []byte {
 }
 
 func IsNotEmptyAndVisible(userEmail string, album Album) bool {
-    visible := album.Owner.Email == userEmail
+	visible := album.Owner.Email == userEmail
 	for _, users := range album.AlbumUsers {
 		if users.User.Email == userEmail {
 			visible = true

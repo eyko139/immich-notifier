@@ -26,13 +26,13 @@ func (a *App) home() http.HandlerFunc {
 		albums, err := a.Immich.FetchAlbums(mail)
 
         if err != nil {
-            a.ErrorLog.Printf("Error fetching albums: %s", err)
+            a.Helper.ServerError(w, err)
         }
 
 		user, err := a.Users.FindOrInsertUser(name, mail)
 
 		if err != nil {
-            a.ErrorLog.Printf("Error fetching or inserting user: %s", err)
+            a.Helper.ServerError(w, err)
 		}
 
 		a.SessionManager.Put(r.Context(), "user_chatId", user.ChatId)
@@ -45,7 +45,7 @@ func (a *App) home() http.HandlerFunc {
 			}
 		}
 		templateData := a.Helper.NewTemplateData(albums, mail, name, user.ChatId != 0, user.ID.Hex())
-		a.Helper.Render(w, "home.html", templateData)
+        a.Helper.Render(w, "home.html", templateData)
 	}
 }
 
@@ -66,7 +66,10 @@ func (a *App) botHook() http.HandlerFunc {
 					a.ErrorLog.Println("Failed to activate subscription, error: " + err.Error())
 					return
 				}
-				a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", a.Env.WebsiteURL))
+                _, err := a.Notifier.SendTelegramMessage(botResponse.Message.From.Id, fmt.Sprintf("Bot activated, return to website: %s", a.Env.WebsiteURL))
+                if err != nil {
+                    a.ErrorLog.Println("Failed to send message to telegram: " + err.Error())
+                }
 			} else {
 				a.InfoLog.Println("Bothook called with no parameters")
 			}
@@ -201,4 +204,11 @@ func (a *App) logoutSuccess() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		a.Helper.Render(w, "logout.html", nil)
 	}
+}
+
+func (a *App) health() http.HandlerFunc {
+    return func (w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("OK"))
+    }
 }

@@ -37,6 +37,13 @@ type UserModel struct {
 	DbClient *mongo.Database
 }
 
+type UserModelInterface interface {
+	UpdateSubscription(email string, subscription AlbumSubscription) error
+	FindOrInsertUser(name, email string) (User, error)
+    RemoveSubscription(email string, albumId string) (string, error) 
+    ActivateSubscriptions(userId string, chatId int) error
+}
+
 func NewUserModel(client *mongo.Database) *UserModel {
 	return &UserModel{
 		DbClient: client,
@@ -124,10 +131,10 @@ func (um *UserModel) FindOrInsertUser(name, email string) (User, error) {
 
 func (um *UserModel) ActivateSubscriptions(userId string, chatId int) error {
 
-    id, err := bson.ObjectIDFromHex(userId)
-    if err != nil {
-        return err
-    }
+	id, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		return err
+	}
 
 	filter := bson.M{
 		"_id": id,
@@ -140,7 +147,7 @@ func (um *UserModel) ActivateSubscriptions(userId string, chatId int) error {
 		fmt.Println("No user found")
 	}
 	if res.Err() != nil {
-        return res.Err()
+		return res.Err()
 	}
 	var user User
 	err = res.Decode(&user)
