@@ -8,9 +8,9 @@ import (
 
 func main() {
 
-	env := env.New()
-
-	app := NewApp(env)
+	appEnv := env.New()
+    
+	app := NewApp(appEnv)
 
     app.InfoLog.Println("Initialized app, starting notification loop")
 
@@ -18,7 +18,7 @@ func main() {
 
 	srv := http.Server{
 		ErrorLog:     app.ErrorLog,
-		Addr:         ":" + env.AppPort,
+		Addr:         ":" + appEnv.AppPort,
 		Handler:      app.Routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,

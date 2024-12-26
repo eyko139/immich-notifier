@@ -63,9 +63,9 @@ func (n *Notifier) StartLoop() {
 
 				album, err := n.immich.FetchAlbumsDetails(subscription.Id)
 
-                if err != nil {
-                    n.errLog.Printf("Error fetching album: %s", err)
-                }
+				if err != nil {
+					n.errLog.Printf("Error fetching album: %s", err)
+				}
 
 				n.infoLog.Printf("checking dates: albumUpdate: %s, subscriptionLastNotified: %s", album.UpdatedAt, subscription.LastNotified)
 
@@ -85,12 +85,17 @@ func (n *Notifier) Notify(user models.User, album models.Album, sub models.Album
 	}
 	latestAssedId := album.Assets[0].ID
 	thumbBytes := n.immich.FetchThumbnail(latestAssedId)
-	n.Gotify(user, sub)
-    res, err := n.Telegram(user, thumbBytes, sub)
-    if err != nil {
-        n.errLog.Printf("Error sending telegram message: %s", err)
-    }
-    n.infoLog.Printf("Sent telegram message, res: %v", res)
+    res, err := n.Gotify(user, sub)
+
+	if err != nil {
+		n.errLog.Printf("Error sending telegram message: %s", err)
+	}
+
+	res, err = n.Telegram(user, thumbBytes, sub)
+	if err != nil {
+		n.errLog.Printf("Error sending telegram message: %s", err)
+	}
+	n.infoLog.Printf("Sent telegram message, res: %v", res)
 }
 
 func (n *Notifier) SendTelegramMessage(chatId int, message string) (*http.Response, error) {
@@ -106,7 +111,7 @@ func (n *Notifier) SendTelegramMessage(chatId int, message string) (*http.Respon
 	if err != nil {
 		n.errLog.Println("Error sending thumbnail" + err.Error())
 	}
-    return thumbResponse, nil
+	return thumbResponse, nil
 }
 
 func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album models.AlbumSubscription) (*http.Response, error) {
@@ -122,11 +127,11 @@ func (n *Notifier) Telegram(user models.User, latestAssetBytes []byte, album mod
 	if err != nil {
 		return nil, err
 	}
-    return thumbResponse, nil
+	return thumbResponse, nil
 
 }
 
-func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) {
+func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) (*http.Response, error) {
 	notification := Notification{
 		Message:  fmt.Sprintf("Album %s has been updated, user: %s", sub.AlbumName, user.Email),
 		Title:    "Immich album update",
@@ -143,9 +148,10 @@ func (n *Notifier) Gotify(user models.User, sub models.AlbumSubscription) {
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("failed to notify: %s", err)
+        return nil, err
 	}
 	n.infoLog.Printf("Sent gotify notification, res: %v", res)
+    return res, nil
 }
 
 func buildMessageRequest(chatId int, message, targetURL string) *http.Request {
