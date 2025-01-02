@@ -27,12 +27,14 @@ func (a *App) home() http.HandlerFunc {
 
         if err != nil {
             a.Helper.ServerError(w, err)
+            return
         }
 
 		user, err := a.Users.FindOrInsertUser(name, mail)
 
 		if err != nil {
             a.Helper.ServerError(w, err)
+            return
 		}
 
 		a.SessionManager.Put(r.Context(), "user_chatId", user.ChatId)

@@ -47,6 +47,12 @@ func (n *Notifier) StartLoop() {
 	var result []models.User
 
 	for {
+        defer func() {
+            r := recover(); if r != nil {
+                n.errLog.Println("Recovered from error in notifier tick")
+            }
+        }()
+
 		<-ticker.C
 
 		cursor, err := n.client.Database("Notify").Collection("users").Find(context.TODO(), bson.D{}, nil)
@@ -64,7 +70,8 @@ func (n *Notifier) StartLoop() {
 				album, err := n.immich.FetchAlbumsDetails(subscription.Id)
 
 				if err != nil {
-					n.errLog.Printf("Error fetching album: %s", err)
+					n.errLog.Printf("Error fetching album: %s, skipping subscription update", err)
+                    continue
 				}
 
 				n.infoLog.Printf("checking dates: albumUpdate: %s, subscriptionLastNotified: %s", album.UpdatedAt, subscription.LastNotified)

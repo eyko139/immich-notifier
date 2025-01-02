@@ -32,6 +32,6 @@ func (a *App) Routes() http.Handler {
 	router.Handler(http.MethodGet, "/", protected.ThenFunc(a.home()))
     router.Handler(http.MethodPost, "/subscribe/:albumId", protected.ThenFunc(a.subAlbumPost()))
     router.Handler(http.MethodGet, "/logout", protected.ThenFunc(a.logout()))
-	standard := alice.New(a.LogRequests, secureHeaders)
+	standard := alice.New(a.LogRequests, secureHeaders, a.PanicRecovery)
 	return standard.Then(router)
 }
